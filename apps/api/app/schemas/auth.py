@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
 
 
 class RegisterRequest(BaseModel):
@@ -27,7 +28,7 @@ class UserResponse(BaseModel):
     base_currency: str
     location: str
     risk_tolerance: str
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 

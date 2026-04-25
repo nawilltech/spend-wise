@@ -1,24 +1,22 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
+import bcrypt
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.config import settings
 from app.models.user import User
 from app.schemas.auth import RegisterRequest, AuthResponse, UserResponse, TokenResponse
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 ALGORITHM = "HS256"
 
 
 class AuthService:
     def _hash_password(self, password: str) -> str:
-        return pwd_context.hash(password)
+        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
     def _verify_password(self, plain: str, hashed: str) -> bool:
-        return pwd_context.verify(plain, hashed)
+        return bcrypt.checkpw(plain.encode(), hashed.encode())
 
     def _create_token(self, data: dict, expires_delta: timedelta) -> str:
         payload = {**data, "exp": datetime.now(tz=timezone.utc) + expires_delta}
