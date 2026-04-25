@@ -1,0 +1,25 @@
+export const Colors = {
+  primary:   '#0F4C75',
+  secondary: '#1B9CFC',
+  success:   '#10B981',
+  danger:    '#EF4444',
+  warning:   '#F59E0B',
+  info:      '#3B82F6',
+
+  income:  '#10B981',
+  expense: '#EF4444',
+
+  background: '#F8FAFC',
+  surface:    '#FFFFFF',
+  border:     '#E2E8F0',
+  divider:    '#F1F5F9',
+
+  textPrimary:   '#1E293B',
+  textSecondary: '#64748B',
+  textMuted:     '#94A3B8',
+  textInverse:   '#FFFFFF',
+
+  chartColors: ['#0F4C75', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'],
+} as const;
+
+export type ColorKey = keyof typeof Colors;

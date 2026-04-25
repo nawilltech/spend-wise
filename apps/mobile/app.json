@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "SpendWise",
+    "slug": "spendwise",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "spendwise",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F4C75"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.spendwise.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "SpendWise uses the microphone to let you log expenses by voice.",
+        "NSCameraUsageDescription": "SpendWise uses the camera to scan receipts."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0F4C75"
+      },
+      "package": "com.spendwise.app",
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        { "cameraPermission": "Allow SpendWise to access your camera to scan receipts." }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}

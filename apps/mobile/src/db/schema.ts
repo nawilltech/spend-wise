@@ -1,0 +1,83 @@
+import { appSchema, tableSchema } from '@nozbe/watermelondb';
+
+export const schema = appSchema({
+  version: 1,
+  tables: [
+    tableSchema({
+      name: 'transactions',
+      columns: [
+        { name: 'user_id',          type: 'string', isIndexed: true },
+        { name: 'type',             type: 'string' },
+        { name: 'amount',           type: 'number' },
+        { name: 'currency',         type: 'string' },
+        { name: 'base_amount',      type: 'number' },
+        { name: 'base_currency',    type: 'string' },
+        { name: 'category_id',      type: 'string', isIndexed: true },
+        { name: 'description',      type: 'string' },
+        { name: 'note',             type: 'string', isOptional: true },
+        { name: 'voice_input',      type: 'string', isOptional: true },
+        { name: 'transaction_date', type: 'number' },
+        { name: 'is_synced',        type: 'boolean' },
+        { name: 'server_id',        type: 'string', isOptional: true },
+        { name: 'created_at',       type: 'number' },
+        { name: 'updated_at',       type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'categories',
+      columns: [
+        { name: 'user_id',    type: 'string', isIndexed: true },
+        { name: 'name',       type: 'string' },
+        { name: 'icon',       type: 'string' },
+        { name: 'color',      type: 'string' },
+        { name: 'type',       type: 'string' },
+        { name: 'frequency',  type: 'string', isOptional: true },
+        { name: 'is_default', type: 'boolean' },
+        { name: 'is_synced',  type: 'boolean' },
+        { name: 'server_id',  type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'budgets',
+      columns: [
+        { name: 'user_id',     type: 'string', isIndexed: true },
+        { name: 'category_id', type: 'string', isIndexed: true },
+        { name: 'amount',      type: 'number' },
+        { name: 'currency',    type: 'string' },
+        { name: 'period',      type: 'string' },
+        { name: 'is_active',   type: 'boolean' },
+        { name: 'is_synced',   type: 'boolean' },
+        { name: 'server_id',   type: 'string', isOptional: true },
+        { name: 'created_at',  type: 'number' },
+        { name: 'updated_at',  type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'goals',
+      columns: [
+        { name: 'user_id',        type: 'string', isIndexed: true },
+        { name: 'name',           type: 'string' },
+        { name: 'target_amount',  type: 'number' },
+        { name: 'current_amount', type: 'number' },
+        { name: 'currency',       type: 'string' },
+        { name: 'deadline',       type: 'number', isOptional: true },
+        { name: 'type',           type: 'string' },
+        { name: 'is_completed',   type: 'boolean' },
+        { name: 'is_synced',      type: 'boolean' },
+        { name: 'server_id',      type: 'string', isOptional: true },
+        { name: 'created_at',     type: 'number' },
+        { name: 'updated_at',     type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'exchange_rates',
+      columns: [
+        { name: 'base_currency', type: 'string' },
+        { name: 'rates_json',    type: 'string' },
+        { name: 'fetched_at',    type: 'number' },
+      ],
+    }),
+  ],
+});
