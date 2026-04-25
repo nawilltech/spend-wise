@@ -36,16 +36,16 @@
       "expo-secure-store",
       [
         "expo-camera",
-        { "cameraPermission": "Allow SpendWise to access your camera to scan receipts." }
-      ]
+        {
+          "cameraPermission": "Allow SpendWise to access your camera to scan receipts."
+        }
+      ],
+      "expo-font"
     ],
+    "newArchEnabled": false,
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {
-      "eas": {
-        "projectId": "your-eas-project-id"
-      }
-    }
+    "extra": {}
   }
 }

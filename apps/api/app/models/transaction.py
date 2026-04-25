@@ -1,6 +1,8 @@
+from __future__ import annotations
 import uuid
 import enum
 from datetime import datetime
+from typing import Optional
 from sqlalchemy import String, Numeric, ForeignKey, DateTime, Enum as SAEnum, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -28,8 +30,8 @@ class Transaction(Base):
     base_currency:    Mapped[str]             = mapped_column(String(3), nullable=False)
     category_id:      Mapped[str]             = mapped_column(ForeignKey("categories.id"), nullable=True)
     description:      Mapped[str]             = mapped_column(String(500), default="")
-    note:             Mapped[str | None]      = mapped_column(Text, nullable=True)
-    voice_input:      Mapped[str | None]      = mapped_column(Text, nullable=True)
+    note:             Mapped[Optional[str]]   = mapped_column(Text, nullable=True)
+    voice_input:      Mapped[Optional[str]]   = mapped_column(Text, nullable=True)
     transaction_date: Mapped[datetime]        = mapped_column(DateTime(timezone=True), nullable=False)
     created_at:       Mapped[datetime]        = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at:       Mapped[datetime]        = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import google.generativeai as genai
 from app.config import settings

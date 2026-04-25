@@ -1,6 +1,8 @@
+from __future__ import annotations
 import uuid
 import enum
 from datetime import datetime
+from typing import Optional
 from sqlalchemy import String, Numeric, Boolean, ForeignKey, DateTime, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -24,7 +26,7 @@ class Goal(Base):
     target_amount:  Mapped[float]    = mapped_column(Numeric(14, 2), nullable=False)
     current_amount: Mapped[float]    = mapped_column(Numeric(14, 2), default=0)
     currency:       Mapped[str]      = mapped_column(String(3), nullable=False)
-    deadline:       Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deadline:       Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     type:           Mapped[GoalType] = mapped_column(SAEnum(GoalType), default=GoalType.savings)
     is_completed:   Mapped[bool]     = mapped_column(Boolean, default=False)
     created_at:     Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

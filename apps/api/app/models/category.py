@@ -1,6 +1,8 @@
+from __future__ import annotations
 import uuid
 import enum
 from datetime import datetime
+from typing import Optional
 from sqlalchemy import String, Boolean, ForeignKey, DateTime, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -30,7 +32,7 @@ class Category(Base):
     icon:       Mapped[str]               = mapped_column(String(10), default="📦")
     color:      Mapped[str]               = mapped_column(String(7), default="#94A3B8")
     type:       Mapped[CategoryType]      = mapped_column(SAEnum(CategoryType), default=CategoryType.expense)
-    frequency:  Mapped[FrequencyType | None] = mapped_column(SAEnum(FrequencyType), nullable=True)
+    frequency:  Mapped[Optional[FrequencyType]] = mapped_column(SAEnum(FrequencyType), nullable=True)
     is_default: Mapped[bool]              = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime]          = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime]          = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

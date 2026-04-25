@@ -7,7 +7,7 @@ setup-mobile:
 	cd apps/mobile && npm install
 
 setup-api:
-	cd apps/api && python -m venv .venv && \
+	cd apps/api && python3 -m venv .venv && \
 	. .venv/bin/activate && \
 	pip install -r requirements.txt -r requirements-dev.txt
 
@@ -16,25 +16,23 @@ dev:
 	make -j2 dev-api dev-mobile
 
 dev-api:
-	cd apps/api && . .venv/bin/activate && \
-	uvicorn app.main:app --reload --port 8000
+	cd apps/api && .venv/bin/uvicorn app.main:app --reload --port 8000
 
 dev-mobile:
-	cd apps/mobile && npx expo start
+	cd apps/mobile && npx expo start --offline
 
 dev-worker:
-	cd apps/api && . .venv/bin/activate && \
-	celery -A app.workers.celery_app worker --loglevel=info
+	cd apps/api && .venv/bin/celery -A app.workers.celery_app worker --loglevel=info
 
 # ── Database ─────────────────────────────────────────────────────────
 migrate:
-	cd apps/api && . .venv/bin/activate && alembic upgrade head
+	cd apps/api && .venv/bin/alembic upgrade head
 
 migrate-create:
-	cd apps/api && . .venv/bin/activate && alembic revision --autogenerate -m "$(name)"
+	cd apps/api && .venv/bin/alembic revision --autogenerate -m "$(name)"
 
 migrate-down:
-	cd apps/api && . .venv/bin/activate && alembic downgrade -1
+	cd apps/api && .venv/bin/alembic downgrade -1
 
 # ── Lint & Type check ────────────────────────────────────────────────
 lint: lint-mobile lint-api
@@ -43,8 +41,7 @@ lint-mobile:
 	cd apps/mobile && npm run lint
 
 lint-api:
-	cd apps/api && . .venv/bin/activate && \
-	ruff check app/ && mypy app/
+	cd apps/api && .venv/bin/ruff check app/ && .venv/bin/mypy app/
 
 type-check:
 	cd apps/mobile && npm run type-check
@@ -53,8 +50,7 @@ type-check:
 test: test-api
 
 test-api:
-	cd apps/api && . .venv/bin/activate && \
-	pytest tests/ -v --cov=app --cov-report=term-missing
+	cd apps/api && .venv/bin/pytest tests/ -v --cov=app --cov-report=term-missing
 
 # ── Build ────────────────────────────────────────────────────────────
 build-android:
