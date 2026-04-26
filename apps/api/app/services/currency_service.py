@@ -18,27 +18,34 @@ class CurrencyService:
         return self._redis
 
     async def get_rates(self, base: str = "USD") -> dict[str, float]:
-        redis = await self._get_redis()
-        cache_key = CACHE_KEY.format(base=base)
-
-        cached = await redis.get(cache_key)
-        if cached:
-            return json.loads(cached)
-
-        rates = await self._fetch_from_api(base)
-        await redis.setex(cache_key, CACHE_TTL, json.dumps(rates))
-        return rates
+        try:
+            redis = await self._get_redis()
+            cache_key = CACHE_KEY.format(base=base)
+            cached = await redis.get(cache_key)
+            if cached:
+                return json.loads(cached)
+            rates = await self._fetch_from_api(base)
+            await redis.setex(cache_key, CACHE_TTL, json.dumps(rates))
+            return rates
+        except Exception:
+            return await self._fetch_from_api(base)
 
     async def _fetch_from_api(self, base: str) -> dict[str, float]:
-        if not settings.open_exchange_rates_app_id:
+        import logging
+        app_id = settings.open_exchange_rates_app_id
+        if not app_id or app_id.startswith("your-"):
             return self._fallback_rates()
 
-        url = f"https://openexchangerates.org/api/latest.json?app_id={settings.open_exchange_rates_app_id}&base={base}"
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            data = response.json()
-            return data["rates"]
+        try:
+            url = f"https://openexchangerates.org/api/latest.json?app_id={app_id}&base={base}"
+            async with httpx.AsyncClient(timeout=10) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                data = response.json()
+                return data["rates"]
+        except (httpx.HTTPError, KeyError) as e:
+            logging.getLogger("uvicorn").warning(f"Exchange rate API error ({e}), using fallback rates")
+            return self._fallback_rates()
 
     def convert(self, amount: float, from_currency: str, to_currency: str, rates: dict[str, float]) -> float:
         if from_currency == to_currency:

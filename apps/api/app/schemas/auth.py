@@ -28,6 +28,7 @@ class UserResponse(BaseModel):
     base_currency: str
     location: str
     risk_tolerance: str
+    role: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

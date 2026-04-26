@@ -25,14 +25,46 @@ dev-worker:
 	cd apps/api && .venv/bin/celery -A app.workers.celery_app worker --loglevel=info
 
 # ── Database ─────────────────────────────────────────────────────────
+seed-admin:
+	cd apps/api && .venv/bin/python -m scripts.seed_admin
+
+# Generate a new migration by diffing models against the live DB.
+# Usage: make migrate-gen name="add email verified to users"
+migrate-gen:
+	cd apps/api && .venv/bin/alembic revision --autogenerate -m "$(name)"
+
+# Apply all pending migrations (safe to run repeatedly — skips already-applied ones).
 migrate:
 	cd apps/api && .venv/bin/alembic upgrade head
 
-migrate-create:
-	cd apps/api && .venv/bin/alembic revision --autogenerate -m "$(name)"
-
+# Roll back the last applied migration.
 migrate-down:
 	cd apps/api && .venv/bin/alembic downgrade -1
+
+# Roll back N migrations. Usage: make migrate-down-n n=3
+migrate-down-n:
+	cd apps/api && .venv/bin/alembic downgrade -$(n)
+
+# Roll back all migrations to a clean slate.
+migrate-reset:
+	cd apps/api && .venv/bin/alembic downgrade base
+
+# Show which revision the DB is currently at.
+migrate-status:
+	cd apps/api && .venv/bin/alembic current
+
+# Show the full migration history with applied/pending status.
+migrate-history:
+	cd apps/api && .venv/bin/alembic history --verbose
+
+# Show SQL that would be run without actually running it.
+migrate-preview:
+	cd apps/api && .venv/bin/alembic upgrade head --sql
+
+# Mark the DB as being at the latest revision without running any SQL.
+# Use after manually creating tables (e.g. fresh dev setup).
+migrate-stamp:
+	cd apps/api && .venv/bin/alembic stamp head
 
 # ── Lint & Type check ────────────────────────────────────────────────
 lint: lint-mobile lint-api

@@ -13,6 +13,11 @@ class RiskTolerance(str, enum.Enum):
     high   = "high"
 
 
+class UserRole(str, enum.Enum):
+    user  = "user"
+    admin = "admin"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -23,6 +28,7 @@ class User(Base):
     base_currency:  Mapped[str]          = mapped_column(String(3), default="NGN")
     location:       Mapped[str]          = mapped_column(String(255), default="")
     risk_tolerance: Mapped[RiskTolerance]= mapped_column(SAEnum(RiskTolerance), default=RiskTolerance.medium)
+    role:           Mapped[UserRole]     = mapped_column(SAEnum(UserRole), default=UserRole.user, server_default="user")
     created_at:     Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at:     Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

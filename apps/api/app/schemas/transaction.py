@@ -1,6 +1,6 @@
 from __future__ import annotations
-from datetime import datetime
-from pydantic import BaseModel
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field
 from app.models.transaction import TransactionType
 
 
@@ -12,7 +12,8 @@ class TransactionCreate(BaseModel):
     description: str = ""
     note: str | None = None
     voice_input: str | None = None
-    transaction_date: datetime
+    idempotency_key: str | None = None
+    transaction_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class TransactionUpdate(BaseModel):
@@ -35,8 +36,17 @@ class TransactionResponse(BaseModel):
     category_id: str | None
     description: str
     note: str | None
+    idempotency_key: str | None
     transaction_date: datetime
+    deleted_at: datetime | None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class BulkTransactionResponse(BaseModel):
+    created: list[TransactionResponse]
+    skipped: list[TransactionResponse]   # returned as-is due to matching idempotency key
+    created_count: int
+    skipped_count: int

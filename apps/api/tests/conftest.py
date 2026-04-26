@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import bcrypt
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -9,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.database import Base, get_db
 from app.main import app
+from app.models.user import User, UserRole
+from app.services.auth_service import auth_service
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
@@ -114,6 +117,37 @@ async def other_auth_headers(client):
     """Authorization headers for a second, separate user."""
     res = await client.post("/api/v1/auth/register", json=SAMPLE_USER_2)
     assert res.status_code == 201, res.text
+    token = res.json()["tokens"]["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+ADMIN_USER = {
+    "email": "admin@spendwise.app",
+    "password": "Admin@123456",
+    "name": "Admin",
+}
+
+
+@pytest_asyncio.fixture
+async def admin_auth_headers(client):
+    """Create an admin user directly in the DB and return its auth headers."""
+    async with TestSessionLocal() as session:
+        hashed = bcrypt.hashpw(ADMIN_USER["password"].encode(), bcrypt.gensalt()).decode()
+        admin = User(
+            email=ADMIN_USER["email"],
+            name=ADMIN_USER["name"],
+            hashed_password=hashed,
+            base_currency="USD",
+            role=UserRole.admin,
+        )
+        session.add(admin)
+        await session.commit()
+
+    res = await client.post(
+        "/api/v1/auth/login",
+        json={"email": ADMIN_USER["email"], "password": ADMIN_USER["password"]},
+    )
+    assert res.status_code == 200, res.text
     token = res.json()["tokens"]["access_token"]
     return {"Authorization": f"Bearer {token}"}
 

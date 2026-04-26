@@ -51,11 +51,12 @@ async def test_create_transaction_invalid_type(client, auth_headers):
     assert res.status_code == 422
 
 
-async def test_create_transaction_missing_date(client, auth_headers):
+async def test_create_transaction_without_date_defaults_to_now(client, auth_headers):
     payload = tx_payload()
     del payload["transaction_date"]
     res = await client.post("/api/v1/transactions", json=payload, headers=auth_headers)
-    assert res.status_code == 422
+    assert res.status_code == 201
+    assert res.json()["transaction_date"] is not None
 
 
 async def test_list_transactions_empty(client, auth_headers):

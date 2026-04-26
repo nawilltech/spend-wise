@@ -1,11 +1,23 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.services.analysis_service import analysis_service
+from app.schemas.analytics import TransactionAnalytics
+from app.services.analysis_service import analysis_service, VALID_PERIODS
 
 router = APIRouter()
+
+
+@router.get("/analytics", response_model=TransactionAnalytics)
+async def get_analytics(
+    period: str = Query("monthly", description=f"One of: {', '.join(sorted(VALID_PERIODS))}"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if period not in VALID_PERIODS:
+        raise HTTPException(status_code=422, detail=f"period must be one of: {', '.join(sorted(VALID_PERIODS))}")
+    return await analysis_service.get_user_analytics(db, user.id, user.base_currency, period)
 
 
 @router.get("/summary")

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import engine, Base
-from app.routers import auth, transactions, categories, budgets, goals, ai, currency, sync, reports
+from app.routers import auth, transactions, categories, budgets, goals, ai, currency, sync, reports, admin
 
 
 @asynccontextmanager
@@ -46,6 +46,7 @@ app.include_router(ai.router,           prefix=f"{PREFIX}/ai",            tags=[
 app.include_router(currency.router,     prefix=f"{PREFIX}/currency",      tags=["currency"])
 app.include_router(sync.router,         prefix=f"{PREFIX}/sync",          tags=["sync"])
 app.include_router(reports.router,      prefix=f"{PREFIX}/reports",       tags=["reports"])
+app.include_router(admin.router,        prefix=f"{PREFIX}/admin",          tags=["admin"])
 
 
 @app.get("/health")
