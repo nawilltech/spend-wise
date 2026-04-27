@@ -6,6 +6,7 @@ export interface User {
   baseCurrency: string;
   location: string;
   riskTolerance: 'low' | 'medium' | 'high';
+  role: 'user' | 'admin';
   createdAt: string;
 }
 
@@ -25,39 +26,85 @@ export interface Transaction {
   currency: string;
   baseAmount: number;
   baseCurrency: string;
-  categoryId: string;
+  categoryId: string | null;
   description: string;
-  note?: string;
-  voiceInput?: string;
+  note?: string | null;
+  voiceInput?: string | null;
+  idempotencyKey?: string | null;
   transactionDate: string;
-  isSynced: boolean;
+  deletedAt?: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface TransactionCreate {
   type: TransactionType;
   amount: number;
   currency: string;
-  categoryId: string;
-  description: string;
+  categoryId?: string | null;
+  description?: string;
   note?: string;
-  transactionDate: string;
+  idempotencyKey?: string;
+  transactionDate?: string;
+}
+
+export interface TransactionUpdate {
+  amount?: number;
+  currency?: string;
+  categoryId?: string | null;
+  description?: string;
+  note?: string;
+  transactionDate?: string;
+}
+
+export interface BulkTransactionResponse {
+  created: Transaction[];
+  skipped: Transaction[];
+  createdCount: number;
+  skippedCount: number;
 }
 
 // ── Categories ───────────────────────────────────────────────────────
+export type CategoryType = 'income' | 'expense' | 'both';
+export type FrequencyType = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
+
 export interface Category {
   id: string;
   userId: string;
   name: string;
   icon: string;
   color: string;
-  type: TransactionType | 'both';
-  frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
+  type: CategoryType;
+  frequency?: FrequencyType;
   isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CategoryCreate {
+  name: string;
+  icon?: string;
+  color?: string;
+  type: CategoryType;
+  frequency?: FrequencyType;
 }
 
 // ── Budgets ──────────────────────────────────────────────────────────
 export type BudgetPeriod = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
+
+export interface BudgetCategory {
+  id: string;
+  name: string;
+  type: CategoryType;
+  frequency?: FrequencyType;
+  icon: string;
+  color: string;
+}
+
+export interface BudgetUser {
+  id: string;
+  name: string;
+}
 
 export interface Budget {
   id: string;
@@ -67,6 +114,17 @@ export interface Budget {
   currency: string;
   period: BudgetPeriod;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user: BudgetUser;
+  category: BudgetCategory;
+}
+
+export interface BudgetCreate {
+  categoryId: string;
+  amount: number;
+  currency: string;
+  period?: BudgetPeriod;
 }
 
 export interface BudgetWithSpent extends Budget {
@@ -88,6 +146,57 @@ export interface Goal {
   deadline?: string;
   type: GoalType;
   isCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoalCreate {
+  name: string;
+  targetAmount: number;
+  currency: string;
+  type: GoalType;
+  deadline?: string;
+}
+
+// ── Analytics ────────────────────────────────────────────────────────
+export type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
+
+export interface CategoryBreakdown {
+  categoryId: string | null;
+  categoryName: string | null;
+  amount: number;
+  count: number;
+  percentage: number;
+}
+
+export interface ChartDataPoint {
+  label: string;
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface TransactionAnalytics {
+  period: AnalyticsPeriod;
+  startDate: string;
+  endDate: string;
+  currency: string;
+  totalVolume: number;
+  entryCount: number;
+  incomeCount: number;
+  expenseCount: number;
+  totalIncome: number;
+  highestIncome: number | null;
+  lowestIncome: number | null;
+  averageIncome: number | null;
+  totalExpense: number;
+  highestExpense: number | null;
+  lowestExpense: number | null;
+  averageExpense: number | null;
+  netSavings: number;
+  savingsRate: number;
+  categoryBreakdown: CategoryBreakdown[];
+  chartData: ChartDataPoint[];
 }
 
 // ── AI ───────────────────────────────────────────────────────────────
@@ -99,13 +208,15 @@ export interface ParsedExpense {
   date: string;
 }
 
+export interface BudgetAllocation {
+  category: string;
+  percentage: number;
+  amount: number;
+  current: number;
+}
+
 export interface BudgetAdvice {
-  allocations: Array<{
-    category: string;
-    percentage: number;
-    amount: number;
-    current: number;
-  }>;
+  allocations: BudgetAllocation[];
   insights: string[];
   actions: string[];
 }
@@ -120,21 +231,10 @@ export interface InvestmentSuggestion {
   platforms?: string[];
 }
 
-// ── Analytics ────────────────────────────────────────────────────────
-export type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
-
-export interface SpendingSummary {
-  period: AnalyticsPeriod;
-  totalIncome: number;
-  totalExpense: number;
-  netSavings: number;
-  savingsRate: number;
-  byCategory: Array<{
-    categoryId: string;
-    categoryName: string;
-    amount: number;
-    percentage: number;
-  }>;
+export interface InvestmentSuggestionsResponse {
+  suggestions: InvestmentSuggestion[];
+  monthlySurplus: number;
+  currency: string;
 }
 
 // ── Currency ─────────────────────────────────────────────────────────
@@ -148,11 +248,4 @@ export interface ExchangeRates {
 export interface ApiError {
   detail: string;
   status: number;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  size: number;
 }

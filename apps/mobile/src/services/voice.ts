@@ -1,7 +1,7 @@
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { aiApi } from './api/ai';
-import type { ParsedExpense } from '@types/index';
+import type { ParsedExpense } from '@/types';
 
 export async function requestMicrophonePermission(): Promise<boolean> {
   const { status } = await Audio.requestPermissionsAsync();

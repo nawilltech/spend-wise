@@ -1,9 +1,9 @@
 import { apiClient } from './client';
-import type { ParsedExpense, BudgetAdvice, InvestmentSuggestion } from '@types/index';
+import type { ParsedExpense, BudgetAdvice, InvestmentSuggestionsResponse } from '@/types';
 
 export const aiApi = {
   async parseVoice(text: string, baseCurrency: string): Promise<ParsedExpense> {
-    const { data } = await apiClient.post('/ai/parse-voice', { text, base_currency: baseCurrency });
+    const { data } = await apiClient.post('/ai/parse-voice', { text, baseCurrency });
     return data;
   },
 
@@ -12,7 +12,7 @@ export const aiApi = {
     return data;
   },
 
-  async getInvestmentSuggestions(): Promise<InvestmentSuggestion[]> {
+  async getInvestmentSuggestions(): Promise<InvestmentSuggestionsResponse> {
     const { data } = await apiClient.get('/ai/investment-suggestions');
     return data;
   },
