@@ -56,7 +56,7 @@ class CurrencyService:
         return round(usd_amount * rates[to_currency], 2)
 
     def _fallback_rates(self) -> dict[str, float]:
-        return {"USD": 1, "NGN": 1500, "GBP": 0.79, "EUR": 0.92, "GHS": 15.5, "KES": 130}
+        return {"USD": 1, "NGN": 1500, "GBP": 0.79, "EUR": 0.92, "CAD": 1.36, "GHS": 15.5, "KES": 130}
 
 
 currency_service = CurrencyService()

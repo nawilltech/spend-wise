@@ -63,7 +63,7 @@ async def client():
 
 @pytest.fixture(autouse=True)
 def mock_currency():
-    fake_rates = {"NGN": 1.0, "USD": 1550.0, "GBP": 1950.0, "EUR": 1680.0}
+    fake_rates = {"NGN": 1.0, "USD": 1550.0, "GBP": 1950.0, "EUR": 1680.0, "CAD": 1140.0}
 
     with patch(
         "app.routers.transactions.currency_service.get_rates",
