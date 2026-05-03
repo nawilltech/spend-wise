@@ -11,6 +11,7 @@ from app.config import settings
 from app.models.user import User
 from app.schemas.auth import RegisterRequest, AuthResponse, UserResponse, TokenResponse, UserUpdate
 from app.services.email_service import send_otp_email, send_verification_email
+from app.services.category_seeder import seed_default_categories
 
 ALGORITHM = "HS256"
 OTP_TTL = 900           # 15 minutes — password reset OTP
@@ -102,6 +103,7 @@ class AuthService:
         )
         db.add(user)
         await db.flush()
+        await seed_default_categories(db, user.id)
 
         token = secrets.token_urlsafe(32)
         redis = await self._get_redis()
