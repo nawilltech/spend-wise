@@ -1,7 +1,7 @@
 import uuid
 import enum
 from datetime import datetime
-from sqlalchemy import String, DateTime, Enum as SAEnum
+from sqlalchemy import String, DateTime, Boolean, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -29,8 +29,10 @@ class User(Base):
     location:       Mapped[str]          = mapped_column(String(255), default="")
     risk_tolerance: Mapped[RiskTolerance]= mapped_column(SAEnum(RiskTolerance), default=RiskTolerance.medium)
     role:           Mapped[UserRole]     = mapped_column(SAEnum(UserRole), default=UserRole.user, server_default="user")
-    created_at:     Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at:     Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    email_verified: Mapped[bool]              = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    last_login:     Mapped[datetime | None]   = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at:     Mapped[datetime]          = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at:     Mapped[datetime]          = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     categories   = relationship("Category",    back_populates="user", cascade="all, delete-orphan")

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from datetime import datetime
 from pydantic import BaseModel
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_verified_user
 from app.models.user import User
 from app.models.goal import Goal, GoalType
 
@@ -32,13 +32,13 @@ class GoalResponse(BaseModel):
 
 
 @router.get("", response_model=list[GoalResponse])
-async def list_goals(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def list_goals(db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     result = await db.execute(select(Goal).where(Goal.user_id == user.id))
     return result.scalars().all()
 
 
 @router.post("", response_model=GoalResponse, status_code=201)
-async def create_goal(body: GoalCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def create_goal(body: GoalCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     goal = Goal(user_id=user.id, **body.model_dump())
     db.add(goal)
     await db.flush()
@@ -46,7 +46,7 @@ async def create_goal(body: GoalCreate, db: AsyncSession = Depends(get_db), user
 
 
 @router.patch("/{goal_id}/progress", response_model=GoalResponse)
-async def update_goal_progress(goal_id: str, body: GoalProgressUpdate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def update_goal_progress(goal_id: str, body: GoalProgressUpdate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     result = await db.execute(select(Goal).where(Goal.id == goal_id, Goal.user_id == user.id))
     goal = result.scalar_one_or_none()
     if not goal:
@@ -57,7 +57,7 @@ async def update_goal_progress(goal_id: str, body: GoalProgressUpdate, db: Async
 
 
 @router.delete("/{goal_id}", status_code=204)
-async def delete_goal(goal_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def delete_goal(goal_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     result = await db.execute(select(Goal).where(Goal.id == goal_id, Goal.user_id == user.id))
     goal = result.scalar_one_or_none()
     if not goal:

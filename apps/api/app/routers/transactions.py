@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_verified_user
 from app.models.user import User
 from app.models.transaction import Transaction
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionResponse, BulkTransactionResponse
@@ -25,7 +25,7 @@ async def list_transactions(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     filters = [Transaction.user_id == user.id, _active]
     if type:         filters.append(Transaction.type == type)
@@ -47,7 +47,7 @@ async def create_transaction(
     body: TransactionCreate,
     response: Response,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     # Idempotency: return the existing transaction if the key was already used
     if body.idempotency_key:
@@ -89,7 +89,7 @@ async def create_transaction(
 async def bulk_create_transactions(
     body: list[TransactionCreate],
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     if not body:
         raise HTTPException(status_code=422, detail="Provide at least one transaction")
@@ -152,7 +152,7 @@ async def bulk_create_transactions(
 async def get_transaction(
     transaction_id: str,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     result = await db.execute(
         select(Transaction).where(
@@ -172,7 +172,7 @@ async def update_transaction(
     transaction_id: str,
     body: TransactionUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     result = await db.execute(
         select(Transaction).where(
@@ -194,7 +194,7 @@ async def update_transaction(
 async def delete_transaction(
     transaction_id: str,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     result = await db.execute(
         select(Transaction).where(

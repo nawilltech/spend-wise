@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from datetime import datetime, timezone
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_verified_user
 from app.models.user import User
 from app.models.transaction import Transaction
 from app.models.category import Category
@@ -17,7 +17,7 @@ router = APIRouter()
 async def pull_changes(
     last_pulled_at: int = Query(0),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     since = datetime.fromtimestamp(last_pulled_at / 1000, tz=timezone.utc) if last_pulled_at else None
 
@@ -51,7 +51,7 @@ async def pull_changes(
 async def push_changes(
     body: dict,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     # Mobile pushes dirty records; server upserts them
     # Full implementation handles created/updated/deleted per table

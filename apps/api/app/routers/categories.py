@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_verified_user
 from app.models.user import User
 from app.models.category import Category, CategoryType
 
@@ -26,13 +26,13 @@ class CategoryResponse(BaseModel):
 
 
 @router.get("", response_model=list[CategoryResponse])
-async def list_categories(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def list_categories(db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     result = await db.execute(select(Category).where(Category.user_id == user.id))
     return result.scalars().all()
 
 
 @router.post("", response_model=CategoryResponse, status_code=201)
-async def create_category(body: CategoryCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def create_category(body: CategoryCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     category = Category(user_id=user.id, **body.model_dump())
     db.add(category)
     await db.flush()
@@ -40,7 +40,7 @@ async def create_category(body: CategoryCreate, db: AsyncSession = Depends(get_d
 
 
 @router.patch("/{category_id}", response_model=CategoryResponse)
-async def update_category(category_id: str, body: CategoryCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def update_category(category_id: str, body: CategoryCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     result = await db.execute(select(Category).where(Category.id == category_id, Category.user_id == user.id))
     category = result.scalar_one_or_none()
     if not category:
@@ -51,7 +51,7 @@ async def update_category(category_id: str, body: CategoryCreate, db: AsyncSessi
 
 
 @router.delete("/{category_id}", status_code=204)
-async def delete_category(category_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def delete_category(category_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     result = await db.execute(select(Category).where(Category.id == category_id, Category.user_id == user.id, Category.is_default == False))
     category = result.scalar_one_or_none()
     if not category:

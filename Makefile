@@ -1,7 +1,7 @@
-.PHONY: setup dev dev-api dev-mobile lint test clean
+.PHONY: setup dev dev-api dev-mobile dev-web lint test clean
 
 # ── Setup ────────────────────────────────────────────────────────────
-setup: setup-mobile setup-api
+setup: setup-mobile setup-api setup-web
 
 setup-mobile:
 	cd apps/mobile && npm install
@@ -11,15 +11,21 @@ setup-api:
 	. .venv/bin/activate && \
 	pip install -r requirements.txt -r requirements-dev.txt
 
+setup-web:
+	cd apps/web && npm install
+
 # ── Dev servers ──────────────────────────────────────────────────────
 dev:
-	make -j2 dev-api dev-mobile
+	make -j3 dev-api dev-mobile dev-web
 
 dev-api:
-	cd apps/api && .venv/bin/uvicorn app.main:app --reload --port 8000
+	cd apps/api && .venv/bin/uvicorn app.main:app --reload --reload-include "*.env" --port 8000
 
 dev-mobile:
 	cd apps/mobile && npx expo start --offline
+
+dev-web:
+	cd apps/web && npm run dev
 
 dev-worker:
 	cd apps/api && .venv/bin/celery -A app.workers.celery_app worker --loglevel=info

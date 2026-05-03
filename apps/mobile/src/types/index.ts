@@ -7,6 +7,8 @@ export interface User {
   location: string;
   riskTolerance: 'low' | 'medium' | 'high';
   role: 'user' | 'admin';
+  emailVerified: boolean;
+  lastLogin: string | null;
   createdAt: string;
 }
 

@@ -8,6 +8,7 @@ import { useAuthStore } from '@store/auth.store';
 import { useTransactions } from '@hooks/useTransactions';
 import { useAnalytics } from '@hooks/useAnalytics';
 import { useCategories } from '@hooks/useCategories';
+import { VerificationBanner } from '@components/common/VerificationBanner';
 import { Colors } from '@constants/colors';
 import { getCurrencySymbol } from '@constants/currencies';
 
@@ -38,6 +39,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {user && !user.emailVerified && <VerificationBanner />}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>{greeting()}</Text>

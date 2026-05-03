@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_verified_user
 from app.models.user import User
 from app.models.budget import Budget
 from app.schemas.budget import BudgetCreate, BudgetUpdate, BudgetResponse
@@ -29,7 +29,7 @@ async def _get_budget(db: AsyncSession, budget_id: str, user_id: str) -> Budget:
 @router.get("", response_model=list[BudgetResponse])
 async def list_budgets(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     result = await db.execute(
         select(Budget)
@@ -44,7 +44,7 @@ async def list_budgets(
 async def create_budget(
     body: BudgetCreate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     budget = Budget(user_id=user.id, **body.model_dump())
     db.add(budget)
@@ -57,7 +57,7 @@ async def update_budget(
     budget_id: str,
     body: BudgetUpdate,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     budget = await _get_budget(db, budget_id, user.id)
     for field, value in body.model_dump(exclude_none=True).items():
@@ -70,7 +70,7 @@ async def update_budget(
 async def delete_budget(
     budget_id: str,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     result = await db.execute(
         select(Budget).where(Budget.id == budget_id, Budget.user_id == user.id)

@@ -4,6 +4,9 @@ import type { User } from '@/types';
 
 interface LoginPayload { email: string; password: string }
 interface RegisterPayload { email: string; password: string; name: string; baseCurrency: string; location: string }
+interface ForgotPasswordPayload { email: string }
+interface ForgotPasswordResponse { session: string; message: string }
+interface ResetPasswordPayload { session: string; otp: string; newPassword: string; confirmNewPassword: string }
 
 export const authApi = {
   async login(payload: LoginPayload): Promise<{ user: User }> {
@@ -30,5 +33,18 @@ export const authApi = {
   async me(): Promise<User> {
     const { data } = await apiClient.get('/auth/me');
     return data;
+  },
+
+  async resendVerification(): Promise<void> {
+    await apiClient.post('/auth/resend-verification');
+  },
+
+  async forgotPassword(payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> {
+    const { data } = await apiClient.post('/auth/forgot-password', payload);
+    return data;
+  },
+
+  async resetPassword(payload: ResetPasswordPayload): Promise<void> {
+    await apiClient.post('/auth/reset-password', payload);
   },
 };
