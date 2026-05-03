@@ -1,4 +1,6 @@
-.PHONY: setup dev dev-api dev-mobile dev-web lint test clean
+.PHONY: setup dev dev-api dev-mobile dev-web lint test clean \
+        build-android build-ios release-preview release-production \
+        deploy-api docker-build
 
 # ── Setup ────────────────────────────────────────────────────────────
 setup: setup-mobile setup-api setup-web
@@ -92,10 +94,34 @@ test-api:
 
 # ── Build ────────────────────────────────────────────────────────────
 build-android:
-	cd apps/mobile && npx eas build --platform android
+	cd apps/mobile && npx eas build --platform android --profile production
 
 build-ios:
-	cd apps/mobile && npx eas build --platform ios
+	cd apps/mobile && npx eas build --platform ios --profile production
+
+# Internal test builds (APK + IPA distributed via link, no store review)
+release-preview:
+	cd apps/mobile && npx eas build --platform all --profile preview
+
+# Full production builds for App Store + Play Store
+release-production:
+	cd apps/mobile && npx eas build --platform all --profile production
+
+# Build and submit in one step (production only)
+submit-ios:
+	cd apps/mobile && npx eas submit --platform ios --latest
+
+submit-android:
+	cd apps/mobile && npx eas submit --platform android --latest
+
+# Build the API Docker image locally (useful for testing before pushing)
+docker-build:
+	docker build -t spendwise-api:local ./apps/api
+
+# Manually trigger Render deploy via webhook
+# Usage: RENDER_HOOK=<your-hook-url> make deploy-api
+deploy-api:
+	curl -f -X POST "$(RENDER_HOOK)"
 
 # ── Utilities ────────────────────────────────────────────────────────
 clean:

@@ -1,0 +1,71 @@
+name: Mobile Release
+
+# Trigger manually from GitHub UI or automatically on version tags (v*)
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Platform to build"
+        required: true
+        default: all
+        type: choice
+        options: [all, ios, android]
+      profile:
+        description: "EAS build profile"
+        required: true
+        default: production
+        type: choice
+        options: [preview, production]
+      submit:
+        description: "Submit to stores after build?"
+        required: true
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # On tag push, always build production for all platforms
+      - name: Build (tag trigger)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: eas build --platform all --profile production --non-interactive
+
+      # On manual dispatch, use the chosen inputs
+      - name: Build (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        run: eas build --platform ${{ inputs.platform }} --profile ${{ inputs.profile }} --non-interactive
+
+      - name: Submit to stores
+        if: github.event_name == 'workflow_dispatch' && inputs.submit == 'true'
+        run: eas submit --platform ${{ inputs.platform }} --latest --non-interactive
