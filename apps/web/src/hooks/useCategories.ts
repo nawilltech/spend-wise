@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { categoriesApi } from '@/services/api/categories';
 import type { Category, CategoryCreate } from '@/types';
 
+interface CategoryUpdate { name?: string; icon?: string; color?: string; type?: string }
+
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,6 +34,16 @@ export function useCategories() {
     }
   }, []);
 
+  const update = useCallback(async (id: string, payload: CategoryUpdate): Promise<Category | null> => {
+    try {
+      const updated = await categoriesApi.update(id, payload);
+      setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      return updated;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const remove = useCallback(async (id: string): Promise<boolean> => {
     try {
       await categoriesApi.delete(id);
@@ -44,5 +56,5 @@ export function useCategories() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  return { categories, loading, error, refetch: fetch, create, remove };
+  return { categories, loading, error, refetch: fetch, create, update, remove };
 }

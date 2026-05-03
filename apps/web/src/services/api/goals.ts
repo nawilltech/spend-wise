@@ -1,7 +1,9 @@
 'use client';
 
 import { apiClient } from './client';
-import type { Goal, GoalCreate } from '@/types';
+import type { Goal, GoalCreate, GoalType } from '@/types';
+
+interface GoalUpdate { name?: string; targetAmount?: number; currency?: string; type?: GoalType; deadline?: string }
 
 export const goalsApi = {
   async list(): Promise<Goal[]> {
@@ -11,6 +13,11 @@ export const goalsApi = {
 
   async create(payload: GoalCreate): Promise<Goal> {
     const { data } = await apiClient.post('/goals', payload);
+    return data;
+  },
+
+  async update(id: string, payload: GoalUpdate): Promise<Goal> {
+    const { data } = await apiClient.patch(`/goals/${id}`, payload);
     return data;
   },
 

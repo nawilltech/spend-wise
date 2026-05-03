@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { goalsApi } from '@services/api/goals';
-import type { Goal, GoalCreate } from '@/types';
+import type { Goal, GoalCreate, GoalType } from '@/types';
+
+interface GoalUpdate { name?: string; targetAmount?: number; currency?: string; type?: GoalType }
 
 export function useGoals() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -30,6 +32,16 @@ export function useGoals() {
     }
   }, []);
 
+  const update = useCallback(async (id: string, payload: GoalUpdate): Promise<Goal | null> => {
+    try {
+      const updated = await goalsApi.update(id, payload);
+      setGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
+      return updated;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const remove = useCallback(async (id: string): Promise<boolean> => {
     try {
       await goalsApi.delete(id);
@@ -42,5 +54,5 @@ export function useGoals() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  return { goals, loading, error, refetch: fetch, create, remove };
+  return { goals, loading, error, refetch: fetch, create, update, remove };
 }

@@ -20,6 +20,14 @@ class GoalCreate(BaseModel):
     deadline: datetime | None = None
 
 
+class GoalUpdate(BaseModel):
+    name: str | None = None
+    target_amount: float | None = None
+    currency: str | None = None
+    type: GoalType | None = None
+    deadline: datetime | None = None
+
+
 class GoalProgressUpdate(BaseModel):
     current_amount: float
 
@@ -42,6 +50,19 @@ async def create_goal(body: GoalCreate, db: AsyncSession = Depends(get_db), user
     goal = Goal(user_id=user.id, **body.model_dump())
     db.add(goal)
     await db.flush()
+    return goal
+
+
+@router.patch("/{goal_id}", response_model=GoalResponse)
+async def update_goal(goal_id: str, body: GoalUpdate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
+    result = await db.execute(select(Goal).where(Goal.id == goal_id, Goal.user_id == user.id))
+    goal = result.scalar_one_or_none()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    for field, value in body.model_dump(exclude_none=True).items():
+        setattr(goal, field, value)
+    if goal.target_amount > 0:
+        goal.is_completed = goal.current_amount >= goal.target_amount
     return goal
 
 

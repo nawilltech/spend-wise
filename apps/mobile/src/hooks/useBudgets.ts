@@ -3,6 +3,8 @@ import { budgetsApi } from '@services/api/budgets';
 import { reportsApi } from '@services/api/reports';
 import type { Budget, BudgetCreate, BudgetWithSpent } from '@/types';
 
+interface BudgetUpdate { amount?: number; currency?: string; period?: string }
+
 export function useBudgets() {
   const [budgets, setBudgets] = useState<BudgetWithSpent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,6 +55,16 @@ export function useBudgets() {
     }
   }, [fetch]);
 
+  const update = useCallback(async (id: string, payload: BudgetUpdate): Promise<boolean> => {
+    try {
+      await budgetsApi.update(id, payload);
+      await fetch();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [fetch]);
+
   const remove = useCallback(async (id: string): Promise<boolean> => {
     try {
       await budgetsApi.delete(id);
@@ -65,5 +77,5 @@ export function useBudgets() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  return { budgets, loading, error, refetch: fetch, create, remove };
+  return { budgets, loading, error, refetch: fetch, create, update, remove };
 }

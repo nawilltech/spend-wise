@@ -19,6 +19,14 @@ class CategoryCreate(BaseModel):
     frequency: str | None = None
 
 
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+    icon: str | None = None
+    color: str | None = None
+    type: CategoryType | None = None
+    frequency: str | None = None
+
+
 class CategoryResponse(BaseModel):
     id: str; user_id: str; name: str; icon: str; color: str
     type: CategoryType; frequency: str | None; is_default: bool
@@ -40,7 +48,7 @@ async def create_category(body: CategoryCreate, db: AsyncSession = Depends(get_d
 
 
 @router.patch("/{category_id}", response_model=CategoryResponse)
-async def update_category(category_id: str, body: CategoryCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
+async def update_category(category_id: str, body: CategoryUpdate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     result = await db.execute(select(Category).where(Category.id == category_id, Category.user_id == user.id))
     category = result.scalar_one_or_none()
     if not category:
