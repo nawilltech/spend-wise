@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Button } from '@components/common/Button';
 import { Input } from '@components/common/Input';
+import { PasswordStrengthHints } from '@components/common/PasswordStrengthHints';
 import { authApi } from '@services/api/auth';
 import { useAuthStore } from '@store/auth.store';
 import { Colors } from '@constants/colors';
@@ -26,7 +27,6 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuthStore();
 
-  const pwErr = password ? passwordError(password) : null;
   const confirmErr = confirmPassword && password !== confirmPassword ? 'Passwords do not match' : null;
 
   async function handleRegister() {
@@ -64,7 +64,7 @@ export default function RegisterScreen() {
         <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />
         <View>
           <Input label="Password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 8 characters" />
-          {pwErr && <Text style={styles.hint}>{pwErr}</Text>}
+          <PasswordStrengthHints password={password} />
         </View>
         <View>
           <Input label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry placeholder="Re-enter your password" />
@@ -81,5 +81,4 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: Colors.background, padding: 24, justifyContent: 'center' },
   title:     { fontSize: 26, fontWeight: '700', color: Colors.textPrimary, marginBottom: 32 },
   form:      { gap: 16 },
-  hint:      { fontSize: 12, color: Colors.danger, marginTop: 4 },
 });

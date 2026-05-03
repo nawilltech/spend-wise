@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 
 const PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+\[\]{};:'",.<>?/\\|`~]).{8,}$/;
 
@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PasswordStrengthHints } from '@/components/ui/PasswordStrengthHints';
 import { authApi } from '@/services/api/auth';
 import { useAuthStore } from '@/store/auth.store';
 import { useToastStore } from '@/store/toast.store';
@@ -31,12 +32,12 @@ export default function RegisterPage() {
   const toast = useToastStore();
   const router = useRouter();
 
-  const pwErr = useMemo(() => (password ? passwordError(password) : null), [password]);
   const confirmErr = confirmPassword && password !== confirmPassword ? 'Passwords do not match' : null;
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     if (!name || !email || !password || !confirmPassword) return;
+    const pwErr = passwordError(password);
     if (pwErr) { toast.error(pwErr); return; }
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
@@ -79,7 +80,7 @@ export default function RegisterPage() {
               placeholder="Min. 8 characters"
               autoComplete="new-password"
             />
-            {pwErr && <p className="mt-1.5 text-xs text-danger">{pwErr}</p>}
+            <PasswordStrengthHints password={password} />
           </div>
           <div>
             <Input
