@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuthStore();
   const toast = useToastStore();
@@ -21,10 +22,14 @@ export default function RegisterPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !email || !password) return;
+    if (!name || !email || !password || !confirmPassword) return;
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
     setLoading(true);
     try {
-      const { user } = await authApi.register({ name, email, password, baseCurrency: 'NGN', location: '' });
+      const { user } = await authApi.register({ name, email, password, confirmPassword, baseCurrency: 'NGN', location: '' });
       setUser(user);
       toast.success('Account created! Welcome to SpendWise.');
       router.replace('/dashboard');
@@ -56,6 +61,14 @@ export default function RegisterPage() {
             onChange={setPassword}
             type="password"
             placeholder="Min. 8 characters"
+            autoComplete="new-password"
+          />
+          <Input
+            label="Confirm Password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            type="password"
+            placeholder="Re-enter your password"
             autoComplete="new-password"
           />
 

@@ -11,15 +11,20 @@ export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuthStore();
 
   async function handleRegister() {
-    if (!name || !email || !password) return;
+    if (!name || !email || !password || !confirmPassword) return;
+    if (password !== confirmPassword) {
+      Alert.alert('Passwords do not match', 'Please make sure both passwords are identical.');
+      return;
+    }
     setLoading(true);
     try {
       const { user } = await authApi.register({
-        name, email, password,
+        name, email, password, confirmPassword,
         baseCurrency: 'NGN',
         location: '',
       });
@@ -40,6 +45,7 @@ export default function RegisterScreen() {
         <Input label="Full name" value={name} onChangeText={setName} placeholder="John Doe" />
         <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />
         <Input label="Password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Min. 8 characters" />
+        <Input label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry placeholder="Re-enter your password" />
         <Button label="Create account" onPress={handleRegister} loading={loading} />
         <Button label="Already have an account? Log in" onPress={() => router.back()} variant="ghost" />
       </View>

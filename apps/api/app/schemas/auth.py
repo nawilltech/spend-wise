@@ -5,9 +5,16 @@ from datetime import datetime
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
+    confirm_password: str
     name: str
     base_currency: str = "NGN"
     location: str = ""
+
+    @model_validator(mode='after')
+    def passwords_must_match(self) -> 'RegisterRequest':
+        if self.password != self.confirm_password:
+            raise ValueError('password and confirm_password do not match')
+        return self
 
 
 class LoginRequest(BaseModel):
