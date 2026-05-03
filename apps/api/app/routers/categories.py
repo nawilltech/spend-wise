@@ -2,6 +2,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 from app.database import get_db
 from app.dependencies import get_verified_user
@@ -43,7 +44,10 @@ async def list_categories(db: AsyncSession = Depends(get_db), user: User = Depen
 async def create_category(body: CategoryCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
     category = Category(user_id=user.id, **body.model_dump())
     db.add(category)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail=f"Category '{body.name}' already exists")
     return category
 
 
@@ -55,6 +59,10 @@ async def update_category(category_id: str, body: CategoryUpdate, db: AsyncSessi
         raise HTTPException(status_code=404, detail="Category not found")
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(category, field, value)
+    try:
+        await db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail=f"Category '{body.name}' already exists")
     return category
 
 

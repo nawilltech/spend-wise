@@ -3,7 +3,7 @@ import uuid
 import enum
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Boolean, ForeignKey, DateTime, Enum as SAEnum
+from sqlalchemy import String, Boolean, ForeignKey, DateTime, Enum as SAEnum, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -25,6 +25,7 @@ class FrequencyType(str, enum.Enum):
 
 class Category(Base):
     __tablename__ = "categories"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_categories_user_name"),)
 
     id:         Mapped[str]               = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id:    Mapped[str]               = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)

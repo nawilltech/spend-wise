@@ -18,8 +18,9 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('NGN');
-  const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,24 +30,18 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
     setType('expense');
     setAmount('');
     setCurrency('NGN');
-    setDescription('');
     setCategoryId(null);
+    setDate(new Date().toISOString().split('T')[0]);
+    setDescription('');
     setError(null);
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
+  const handleClose = () => { reset(); onClose(); };
 
   const handleSubmit = async () => {
     const parsed = parseFloat(amount);
     if (!amount || isNaN(parsed) || parsed <= 0) {
       setError('Enter a valid amount');
-      return;
-    }
-    if (!description.trim()) {
-      setError('Enter a description');
       return;
     }
     setError(null);
@@ -55,17 +50,13 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
       type,
       amount: parsed,
       currency,
-      description: description.trim(),
+      description: description.trim() || type,
       categoryId: categoryId ?? undefined,
-      transactionDate: new Date().toISOString(),
+      transactionDate: date,
     });
     setSubmitting(false);
-    if (ok) {
-      reset();
-      onClose();
-    } else {
-      setError('Failed to save transaction');
-    }
+    if (ok) { reset(); onClose(); }
+    else setError('Failed to save transaction');
   };
 
   return (
@@ -77,11 +68,9 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
           </TouchableOpacity>
           <Text style={styles.title}>Add Transaction</Text>
           <TouchableOpacity onPress={handleSubmit} hitSlop={8} disabled={submitting}>
-            {submitting ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <Text style={styles.save}>Save</Text>
-            )}
+            {submitting
+              ? <ActivityIndicator size="small" color={Colors.primary} />
+              : <Text style={styles.save}>Save</Text>}
           </TouchableOpacity>
         </View>
 
@@ -101,23 +90,22 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
             ))}
           </View>
 
-          {/* Amount + currency */}
-          <View style={styles.amountRow}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.currencyScroll}>
-              {POPULAR_CURRENCIES.slice(0, 6).map((c) => (
-                <TouchableOpacity
-                  key={c.code}
-                  style={[styles.currencyChip, currency === c.code && styles.currencyChipActive]}
-                  onPress={() => setCurrency(c.code)}
-                >
-                  <Text style={[styles.currencyChipText, currency === c.code && styles.currencyChipTextActive]}>
-                    {c.flag} {c.code}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          {/* Currency chips */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.currencyScroll}>
+            {POPULAR_CURRENCIES.slice(0, 6).map((c) => (
+              <TouchableOpacity
+                key={c.code}
+                style={[styles.currencyChip, currency === c.code && styles.currencyChipActive]}
+                onPress={() => setCurrency(c.code)}
+              >
+                <Text style={[styles.currencyChipText, currency === c.code && styles.currencyChipTextActive]}>
+                  {c.flag} {c.code}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
+          {/* Amount */}
           <View style={styles.inputWrap}>
             <Text style={styles.label}>Amount</Text>
             <TextInput
@@ -127,17 +115,7 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
               placeholder="0.00"
               placeholderTextColor={Colors.textMuted}
               keyboardType="decimal-pad"
-            />
-          </View>
-
-          <View style={styles.inputWrap}>
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={styles.input}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="What was this for?"
-              placeholderTextColor={Colors.textMuted}
+              autoFocus
             />
           </View>
 
@@ -162,6 +140,31 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
             </View>
           )}
 
+          {/* Date */}
+          <View style={styles.inputWrap}>
+            <Text style={styles.label}>Date</Text>
+            <TextInput
+              style={styles.input}
+              value={date}
+              onChangeText={setDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="numbers-and-punctuation"
+            />
+          </View>
+
+          {/* Description */}
+          <View style={styles.inputWrap}>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={styles.input}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Optional"
+              placeholderTextColor={Colors.textMuted}
+            />
+          </View>
+
           {error && <Text style={styles.error}>{error}</Text>}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -183,7 +186,6 @@ const styles = StyleSheet.create({
   typeBtnIncome:         { backgroundColor: Colors.income, borderColor: Colors.income },
   typeBtnText:           { fontSize: 15, fontWeight: '500', color: Colors.textSecondary },
   typeBtnTextActive:     { color: '#fff' },
-  amountRow:             { gap: 8 },
   currencyScroll:        { flexGrow: 0 },
   currencyChip:          { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, marginRight: 8, backgroundColor: Colors.background },
   currencyChipActive:    { borderColor: Colors.primary, backgroundColor: Colors.primary },

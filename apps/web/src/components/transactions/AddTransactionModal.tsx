@@ -98,8 +98,7 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
             </div>
           </div>
 
-          <Input label="Description" value={description} onChange={setDescription} placeholder="What was this for?" />
-
+          {/* Category */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-primary">Category</label>
             <select
@@ -115,6 +114,8 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
           </div>
 
           <Input label="Date" value={date} onChange={setDate} type="date" />
+
+          <Input label="Description" value={description} onChange={setDescription} placeholder="Optional" />
 
           <Button label="Save Transaction" type="submit" loading={loading} />
         </form>
