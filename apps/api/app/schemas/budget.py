@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 from pydantic import BaseModel
-from app.models.budget import BudgetPeriod
+from app.models.budget import BudgetPeriod, BudgetType
 from app.models.category import CategoryType, FrequencyType
 
 
@@ -10,12 +10,16 @@ class BudgetCreate(BaseModel):
     amount: float
     currency: str
     period: BudgetPeriod = BudgetPeriod.monthly
+    type: BudgetType = BudgetType.expense
+    description: str | None = None
 
 
 class BudgetUpdate(BaseModel):
     amount: float | None = None
     currency: str | None = None
     period: BudgetPeriod | None = None
+    type: BudgetType | None = None
+    description: str | None = None
     is_active: bool | None = None
 
 
@@ -44,6 +48,8 @@ class BudgetResponse(BaseModel):
     amount: float
     currency: str
     period: BudgetPeriod
+    type: BudgetType
+    description: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime

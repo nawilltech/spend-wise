@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TransactionItem } from '@components/transactions/TransactionItem';
 import { AddTransactionModal } from '@components/transactions/AddTransactionModal';
 import { useTransactions } from '@hooks/useTransactions';
 import { useCategories } from '@hooks/useCategories';
+import { useBudgets } from '@hooks/useBudgets';
 import { Colors } from '@constants/colors';
-import type { TransactionType } from '@/types';
+import type { Transaction, TransactionType } from '@/types';
 
 type Filter = 'all' | TransactionType;
+type ModalMode = { mode: 'create' } | { mode: 'edit'; tx: Transaction };
+
 const FILTERS: { label: string; value: Filter }[] = [
   { label: 'All', value: 'all' },
   { label: 'Income', value: 'income' },
@@ -17,13 +20,14 @@ const FILTERS: { label: string; value: Filter }[] = [
 
 export default function TransactionsScreen() {
   const [filter, setFilter] = useState<Filter>('all');
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode | null>(null);
 
-  const { transactions, loading, refetch, create } = useTransactions({
+  const { transactions, loading, refetch, create, update, remove } = useTransactions({
     limit: 100,
     type: filter === 'all' ? undefined : filter,
   });
   const { categories } = useCategories();
+  const { budgets } = useBudgets();
 
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
 
@@ -32,6 +36,28 @@ export default function TransactionsScreen() {
     if (result) await refetch();
     return result !== null;
   };
+
+  const handleUpdate = async (tx: Transaction, payload: Parameters<typeof create>[0]) => {
+    const result = await update(tx.id, payload);
+    return result !== null;
+  };
+
+  function confirmDelete(tx: Transaction) {
+    Alert.alert(
+      'Delete transaction?',
+      `Remove "${tx.description || 'this transaction'}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            const ok = await remove(tx.id);
+            if (!ok) Alert.alert('Error', 'Failed to delete transaction');
+          },
+        },
+      ],
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -80,6 +106,8 @@ export default function TransactionsScreen() {
                   categoryName={cat?.name ?? 'Uncategorised'}
                   categoryIcon={cat?.icon ?? '💳'}
                   date={new Date(tx.transactionDate)}
+                  onEdit={() => setModalMode({ mode: 'edit', tx })}
+                  onDelete={() => confirmDelete(tx)}
                 />
               );
             }}
@@ -88,15 +116,23 @@ export default function TransactionsScreen() {
       </View>
 
       {/* Floating add button */}
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity style={styles.fab} onPress={() => setModalMode({ mode: 'create' })}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
       <AddTransactionModal
-        visible={modalVisible}
+        key={modalMode?.mode === 'edit' ? modalMode.tx.id : 'new'}
+        visible={modalMode !== null}
         categories={categories}
-        onClose={() => setModalVisible(false)}
-        onSubmit={handleCreate}
+        budgets={budgets}
+        initial={modalMode?.mode === 'edit' ? modalMode.tx : undefined}
+        onClose={() => setModalMode(null)}
+        onSubmit={async (payload) => {
+          if (modalMode?.mode === 'edit') {
+            return handleUpdate(modalMode.tx, payload);
+          }
+          return handleCreate(payload);
+        }}
       />
     </SafeAreaView>
   );

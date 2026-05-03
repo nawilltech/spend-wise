@@ -43,10 +43,11 @@ function VerificationBanner() {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, user, setUser, clearAuth } = useAuthStore();
+  const { isAuthenticated, _hasHydrated, user, setUser, clearAuth } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
+    if (!_hasHydrated) return;
     if (!isAuthenticated) {
       router.replace('/login');
       return;
@@ -55,9 +56,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       clearAuth();
       router.replace('/login');
     });
-  }, [isAuthenticated, router, setUser, clearAuth]);
+  }, [_hasHydrated, isAuthenticated, router, setUser, clearAuth]);
 
-  if (!isAuthenticated) return null;
+  if (!_hasHydrated || !isAuthenticated) return null;
 
   return (
     <div className="flex min-h-screen bg-background">

@@ -1,12 +1,12 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_verified_user
 from app.models.user import User
-from app.models.budget import Budget
+from app.models.budget import Budget, BudgetType
 from app.schemas.budget import BudgetCreate, BudgetUpdate, BudgetResponse
 
 router = APIRouter()
@@ -28,15 +28,19 @@ async def _get_budget(db: AsyncSession, budget_id: str, user_id: str) -> Budget:
 
 @router.get("", response_model=list[BudgetResponse])
 async def list_budgets(
+    budget_type: BudgetType | None = Query(None, alias="type"),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_verified_user),
 ):
-    result = await db.execute(
+    q = (
         select(Budget)
         .where(Budget.user_id == user.id, Budget.is_active == True)
         .options(*_with_relations)
         .order_by(Budget.created_at.desc())
     )
+    if budget_type is not None:
+        q = q.where(Budget.type == budget_type)
+    result = await db.execute(q)
     return result.scalars().all()
 
 

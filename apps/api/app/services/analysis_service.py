@@ -9,6 +9,7 @@ from app.schemas.analytics import (
     TransactionAnalytics,
     AdminAnalytics,
     CategoryBreakdown,
+    BudgetBreakdown,
     DailyDataPoint,
 )
 
@@ -129,6 +130,18 @@ def _compute_analytics(
         for k, v in sorted(cat_totals.items(), key=lambda x: x[1]["amount"], reverse=True)
     ]
 
+    # Budget breakdown (all transaction types)
+    budget_totals: dict[str, dict] = defaultdict(lambda: {"amount": 0.0, "count": 0})
+    for t in transactions:
+        if t.budget_id:
+            budget_totals[t.budget_id]["amount"] += float(t.base_amount)
+            budget_totals[t.budget_id]["count"] += 1
+
+    budget_breakdown = [
+        BudgetBreakdown(budget_id=k, amount=round(v["amount"], 2), count=v["count"])
+        for k, v in budget_totals.items()
+    ]
+
     chart_data = _build_chart_data(transactions, period, start, end)
 
     return dict(
@@ -151,6 +164,7 @@ def _compute_analytics(
         net_savings=round(total_income - total_expense, 2),
         savings_rate=round(savings_rate, 1),
         category_breakdown=breakdown,
+        budget_breakdown=budget_breakdown,
         chart_data=chart_data,
     )
 
@@ -162,8 +176,13 @@ class AnalysisService:
         user_id: str,
         base_currency: str,
         period: str = "monthly",
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> TransactionAnalytics:
-        start, end = _period_range(period)
+        if start_date and end_date:
+            start, end = start_date, end_date
+        else:
+            start, end = _period_range(period)
 
         result = await db.execute(
             select(Transaction).where(

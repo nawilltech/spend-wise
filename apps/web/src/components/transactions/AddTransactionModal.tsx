@@ -6,26 +6,35 @@ import { Input } from '@/components/ui/Input';
 import { POPULAR_CURRENCIES } from '@/constants/currencies';
 import { useToastStore } from '@/store/toast.store';
 import { getApiError } from '@/lib/api-error';
-import type { Category, TransactionCreate, TransactionType } from '@/types';
+import type { Category, Budget, Transaction, TransactionCreate, TransactionType } from '@/types';
 
 interface AddTransactionModalProps {
   visible: boolean;
   categories: Category[];
+  budgets?: Budget[];
   onClose: () => void;
   onSubmit: (payload: TransactionCreate) => Promise<void>;
+  initial?: Partial<Transaction>;
 }
 
-export function AddTransactionModal({ visible, categories, onClose, onSubmit }: AddTransactionModalProps) {
-  const [type, setType] = useState<TransactionType>('expense');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('NGN');
-  const [description, setDescription] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+export function AddTransactionModal({ visible, categories, budgets = [], onClose, onSubmit, initial }: AddTransactionModalProps) {
+  const [type, setType] = useState<TransactionType>(initial?.type ?? 'expense');
+  const [amount, setAmount] = useState(initial?.amount ? String(initial.amount) : '');
+  const [currency, setCurrency] = useState(initial?.currency ?? 'NGN');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? '');
+  const [budgetId, setBudgetId] = useState(initial?.budgetId ?? '');
+  const [date, setDate] = useState(
+    initial?.transactionDate
+      ? initial.transactionDate.split('T')[0]
+      : new Date().toISOString().split('T')[0]
+  );
   const [loading, setLoading] = useState(false);
   const toast = useToastStore();
 
+  const isEdit = !!initial;
   const filtered = categories.filter((c) => c.type === type || c.type === 'both');
+  const filteredBudgets = budgets.filter((b) => b.type === type);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,14 +50,13 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
         currency,
         description,
         categoryId: categoryId || null,
+        budgetId: budgetId || null,
         transactionDate: date,
       });
-      toast.success('Transaction saved');
-      setAmount(''); setDescription(''); setCategoryId('');
-      setDate(new Date().toISOString().split('T')[0]);
+      toast.success(isEdit ? 'Transaction updated' : 'Transaction saved');
       onClose();
     } catch (err) {
-      toast.error(getApiError(err, 'Failed to save transaction'));
+      toast.error(getApiError(err, isEdit ? 'Failed to update transaction' : 'Failed to save transaction'));
     } finally {
       setLoading(false);
     }
@@ -61,7 +69,7 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full sm:max-w-md bg-surface rounded-t-3xl sm:rounded-2xl shadow-xl p-6 pb-8 sm:pb-6 z-10">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-text-primary">Add Transaction</h2>
+          <h2 className="text-lg font-bold text-text-primary">{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">×</button>
         </div>
 
@@ -113,11 +121,29 @@ export function AddTransactionModal({ visible, categories, onClose, onSubmit }: 
             </select>
           </div>
 
+          {filteredBudgets.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-text-primary">Budget <span className="text-text-muted font-normal">(optional)</span></label>
+              <select
+                value={budgetId}
+                onChange={(e) => setBudgetId(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">No budget</option>
+                {filteredBudgets.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.category?.icon} {b.category?.name} — {b.currency} {b.amount.toLocaleString()} / {b.period}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <Input label="Date" value={date} onChange={setDate} type="date" />
 
           <Input label="Description" value={description} onChange={setDescription} placeholder="Optional" />
 
-          <Button label="Save Transaction" type="submit" loading={loading} />
+          <Button label={isEdit ? 'Save Changes' : 'Save Transaction'} type="submit" loading={loading} />
         </form>
       </div>
     </div>

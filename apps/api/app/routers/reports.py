@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -12,12 +13,17 @@ router = APIRouter()
 @router.get("/analytics", response_model=TransactionAnalytics)
 async def get_analytics(
     period: str = Query("monthly", description=f"One of: {', '.join(sorted(VALID_PERIODS))}"),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_verified_user),
 ):
-    if period not in VALID_PERIODS:
+    if not (start_date and end_date) and period not in VALID_PERIODS:
         raise HTTPException(status_code=422, detail=f"period must be one of: {', '.join(sorted(VALID_PERIODS))}")
-    return await analysis_service.get_user_analytics(db, user.id, user.base_currency, period)
+    return await analysis_service.get_user_analytics(
+        db, user.id, user.base_currency, period,
+        start_date=start_date, end_date=end_date,
+    )
 
 
 @router.get("/summary")

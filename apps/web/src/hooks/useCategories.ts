@@ -1,21 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { categoriesApi } from '@/services/api/categories';
 import type { Category, CategoryCreate } from '@/types';
 
 interface CategoryUpdate { name?: string; icon?: string; color?: string; type?: string }
 
-export function useCategories() {
+export function useCategories(filterType?: string, searchTerm?: string) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetch = useCallback(async () => {
+  const fetch = useCallback(async (type?: string, term?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await categoriesApi.list();
+      const data = await categoriesApi.list(type, term);
       setCategories(data);
     } catch {
       setError('Failed to load categories');
@@ -23,6 +24,17 @@ export function useCategories() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = searchTerm?.trim();
+    if (trimmed) {
+      debounceRef.current = setTimeout(() => fetch(filterType, trimmed), 300);
+    } else {
+      fetch(filterType, undefined);
+    }
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [filterType, searchTerm, fetch]);
 
   const create = useCallback(async (payload: CategoryCreate): Promise<Category | null> => {
     try {
@@ -54,7 +66,5 @@ export function useCategories() {
     }
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
-
-  return { categories, loading, error, refetch: fetch, create, update, remove };
+  return { categories, loading, error, refetch: () => fetch(filterType, searchTerm?.trim()), create, update, remove };
 }

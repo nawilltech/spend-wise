@@ -1,7 +1,7 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 from app.database import get_db
@@ -35,8 +35,18 @@ class CategoryResponse(BaseModel):
 
 
 @router.get("", response_model=list[CategoryResponse])
-async def list_categories(db: AsyncSession = Depends(get_db), user: User = Depends(get_verified_user)):
-    result = await db.execute(select(Category).where(Category.user_id == user.id))
+async def list_categories(
+    category_type: CategoryType | None = Query(None, alias="type"),
+    term: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_verified_user),
+):
+    q = select(Category).where(Category.user_id == user.id)
+    if category_type is not None:
+        q = q.where(Category.type == category_type)
+    if term:
+        q = q.where(func.lower(Category.name).contains(term.lower()))
+    result = await db.execute(q)
     return result.scalars().all()
 
 

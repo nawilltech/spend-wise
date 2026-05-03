@@ -14,9 +14,10 @@ import { useBudgets } from '@/hooks/useBudgets';
 import { useGoals } from '@/hooks/useGoals';
 import { POPULAR_CURRENCIES } from '@/constants/currencies';
 import { getApiError } from '@/lib/api-error';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type {
   Category, CategoryCreate, CategoryType,
-  BudgetCreate, BudgetPeriod,
+  BudgetCreate, BudgetPeriod, BudgetType,
   Goal, GoalCreate, GoalType,
 } from '@/types';
 
@@ -199,7 +200,9 @@ function ProfileTab() {
 // ── categories tab ───────────────────────────────────────────────────────────
 
 function CategoriesTab() {
-  const { categories, create, update, remove } = useCategories();
+  const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const { categories, create, update, remove } = useCategories(filterType === 'all' ? undefined : filterType, searchTerm);
   const toast = useToastStore();
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>('expense');
@@ -208,6 +211,8 @@ function CategoriesTab() {
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<CategoryType>('expense');
   const [editSaving, setEditSaving] = useState(false);
+  const [deletingCat, setDeletingCat] = useState<Category | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   function openEdit(c: Category) { setEditing(c); setEditName(c.name); setEditType(c.type as CategoryType); }
 
@@ -229,16 +234,34 @@ function CategoriesTab() {
     else toast.error('Failed to update category');
   }
 
-  async function handleDelete(id: string, catName: string) {
-    if (!confirm(`Remove "${catName}"?`)) return;
-    const ok = await remove(id);
-    if (!ok) toast.error('Failed to delete category');
+  function requestDelete(c: Category) {
+    if (c.isDefault) { toast.error('Default categories cannot be deleted'); return; }
+    setDeletingCat(c);
+  }
+
+  async function handleDelete() {
+    if (!deletingCat) return;
+    setDeleteLoading(true);
+    const ok = await remove(deletingCat.id);
+    setDeleteLoading(false);
+    if (ok) setDeletingCat(null);
+    else toast.error('Failed to delete category');
   }
 
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs text-text-muted uppercase tracking-wide mb-2">Type</p>
+        <p className="text-xs text-text-muted uppercase tracking-wide mb-2">Show</p>
+        <ChipPicker options={['all', 'expense', 'income']} value={filterType} onChange={setFilterType} />
+      </div>
+      <input
+        className="w-full px-3 py-2 rounded-lg bg-background border border-divider text-text-primary text-sm focus:outline-none focus:border-primary"
+        placeholder="Search categories…"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <div>
+        <p className="text-xs text-text-muted uppercase tracking-wide mb-2">New Category Type</p>
         <ChipPicker options={['expense', 'income', 'both'] as CategoryType[]} value={type} onChange={setType} />
       </div>
       <div className="flex gap-2">
@@ -252,23 +275,28 @@ function CategoriesTab() {
         <Button label="Add" onClick={handleAdd} loading={saving} className="w-auto px-5" />
       </div>
       <div className="divide-y divide-divider">
+        {categories.length === 0 && searchTerm.trim() && (
+          <p className="py-4 text-sm text-text-muted text-center">No categories match "{searchTerm}"</p>
+        )}
         {categories.map((c) => (
           <div key={c.id} className="flex items-center gap-3 py-2.5">
             <span className="text-xl">{c.icon || '📂'}</span>
             <div className="flex-1">
               <p className="text-sm font-medium text-text-primary">{c.name}</p>
-              <p className="text-xs text-text-muted capitalize">{c.type}</p>
+              <p className="text-xs text-text-muted capitalize">{c.type}{c.isDefault ? ' · default' : ''}</p>
             </div>
-            {!c.isDefault && (
-              <div className="flex gap-1">
-                <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-background text-primary">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button onClick={() => handleDelete(c.id, c.name)} className="p-1.5 rounded-lg hover:bg-background text-danger">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                </button>
-              </div>
-            )}
+            <div className="flex gap-1">
+              <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-background text-primary" title="Edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button
+                onClick={() => requestDelete(c)}
+                className={`p-1.5 rounded-lg hover:bg-background ${c.isDefault ? 'text-text-muted opacity-40 cursor-not-allowed' : 'text-danger'}`}
+                title={c.isDefault ? 'Default categories cannot be deleted' : 'Delete'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -287,6 +315,15 @@ function CategoriesTab() {
           <ChipPicker options={['expense', 'income', 'both'] as CategoryType[]} value={editType} onChange={setEditType} />
         </div>
       </Modal>
+
+      <ConfirmModal
+        open={!!deletingCat}
+        title="Delete category?"
+        message={`Remove "${deletingCat?.name}"? This cannot be undone.`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+        onCancel={() => setDeletingCat(null)}
+      />
     </div>
   );
 }
@@ -294,7 +331,8 @@ function CategoriesTab() {
 // ── budgets tab ──────────────────────────────────────────────────────────────
 
 function BudgetsTab() {
-  const { budgets, create, update, remove } = useBudgets();
+  const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
+  const { budgets, create, update, remove } = useBudgets(filterType === 'all' ? undefined : filterType);
   const { categories, create: createCategory } = useCategories();
   const { user } = useAuthStore();
   const toast = useToastStore();
@@ -302,15 +340,25 @@ function BudgetsTab() {
   const [catSelection, setCatSelection] = useState<{ id: string; name: string } | null>(null);
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<BudgetPeriod>('monthly');
+  const [budgetType, setBudgetType] = useState<BudgetType>('expense');
+  const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editPeriod, setEditPeriod] = useState<BudgetPeriod>('monthly');
+  const [editType, setEditType] = useState<BudgetType>('expense');
+  const [editDescription, setEditDescription] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+  const [deletingBudgetId, setDeletingBudgetId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  function openEdit(b: { id: string; amount: number; period: BudgetPeriod }) {
-    setEditingId(b.id); setEditAmount(String(b.amount)); setEditPeriod(b.period);
+  function openEdit(b: { id: string; amount: number; period: BudgetPeriod; type: BudgetType; description?: string }) {
+    setEditingId(b.id);
+    setEditAmount(String(b.amount));
+    setEditPeriod(b.period);
+    setEditType(b.type);
+    setEditDescription(b.description ?? '');
   }
 
   async function handleAdd() {
@@ -322,9 +370,16 @@ function BudgetsTab() {
         const newCat = await categoriesApi.create({ name: catSelection.name, type: 'expense' } as CategoryCreate);
         categoryId = newCat.id;
       }
-      const payload: BudgetCreate = { categoryId, amount: parseFloat(amount), currency: user?.baseCurrency ?? 'NGN', period };
+      const payload: BudgetCreate = {
+        categoryId,
+        amount: parseFloat(amount),
+        currency: user?.baseCurrency ?? 'NGN',
+        period,
+        type: budgetType,
+        description: description.trim() || undefined,
+      };
       const ok = await create(payload);
-      if (ok) { setCatSelection(null); setAmount(''); }
+      if (ok) { setCatSelection(null); setAmount(''); setDescription(''); }
       else toast.error('Failed to create budget');
     } catch (err) {
       toast.error(getApiError(err, 'Failed to create budget'));
@@ -336,22 +391,38 @@ function BudgetsTab() {
   async function handleSaveEdit() {
     if (!editingId) return;
     setEditSaving(true);
-    const ok = await update(editingId, { amount: parseFloat(editAmount), period: editPeriod });
+    const ok = await update(editingId, {
+      amount: parseFloat(editAmount),
+      period: editPeriod,
+      type: editType,
+      description: editDescription.trim() || undefined,
+    });
     setEditSaving(false);
     if (ok) setEditingId(null);
     else toast.error('Failed to update budget');
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Remove this budget?')) return;
-    const ok = await remove(id);
-    if (!ok) toast.error('Failed to delete budget');
+  async function handleDeleteBudget() {
+    if (!deletingBudgetId) return;
+    setDeleteLoading(true);
+    const ok = await remove(deletingBudgetId);
+    setDeleteLoading(false);
+    if (ok) setDeletingBudgetId(null);
+    else toast.error('Failed to delete budget');
   }
 
   const allCats = categories.filter((c) => c.type === 'expense' || c.type === 'both');
 
   return (
     <div className="space-y-4">
+      <div>
+        <p className="text-xs text-text-muted uppercase tracking-wide mb-2">Show</p>
+        <ChipPicker options={['all', 'expense', 'income']} value={filterType} onChange={setFilterType} />
+      </div>
+      <div>
+        <p className="text-xs text-text-muted uppercase tracking-wide mb-2">Budget Type</p>
+        <ChipPicker options={['expense', 'income'] as BudgetType[]} value={budgetType} onChange={setBudgetType} />
+      </div>
       <div>
         <p className="text-xs text-text-muted uppercase tracking-wide mb-2">Period</p>
         <ChipPicker options={['daily', 'weekly', 'monthly', 'quarterly', 'annual'] as BudgetPeriod[]} value={period} onChange={setPeriod} />
@@ -368,24 +439,31 @@ function BudgetsTab() {
           onChange={(e) => setAmount(e.target.value)}
           type="number"
         />
-        <Button label="Add" onClick={handleAdd} loading={saving} className="w-auto px-5" />
       </div>
+      <input
+        className="w-full px-3 py-2 rounded-lg bg-background border border-divider text-text-primary text-sm focus:outline-none focus:border-primary"
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <Button label="Add Budget" onClick={handleAdd} loading={saving} />
       <div className="divide-y divide-divider">
         {budgets.map((b) => (
           <div key={b.id} className="flex items-center gap-3 py-2.5">
             <span className="text-xl">{b.category?.icon || '💰'}</span>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary">{b.category?.name}</p>
               <p className="text-xs text-text-muted capitalize">
-                {b.period} · {b.currency} {b.amount.toLocaleString()}
+                {b.type} · {b.period} · {b.currency} {b.amount.toLocaleString()}
                 {b.spent > 0 && ` · ${Math.round(b.percentUsed)}% used`}
               </p>
+              {b.description && <p className="text-xs text-text-muted truncate">{b.description}</p>}
             </div>
-            <div className="flex gap-1">
-              <button onClick={() => openEdit({ id: b.id, amount: b.amount, period: b.period })} className="p-1.5 rounded-lg hover:bg-background text-primary">
+            <div className="flex gap-1 flex-shrink-0">
+              <button onClick={() => openEdit({ id: b.id, amount: b.amount, period: b.period, type: b.type, description: b.description })} className="p-1.5 rounded-lg hover:bg-background text-primary">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-              <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg hover:bg-background text-danger">
+              <button onClick={() => setDeletingBudgetId(b.id)} className="p-1.5 rounded-lg hover:bg-background text-danger" title="Delete">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
               </button>
             </div>
@@ -404,10 +482,32 @@ function BudgetsTab() {
           />
         </div>
         <div>
+          <p className="text-xs text-text-muted uppercase tracking-wide mb-1.5">Budget Type</p>
+          <ChipPicker options={['expense', 'income'] as BudgetType[]} value={editType} onChange={setEditType} />
+        </div>
+        <div>
           <p className="text-xs text-text-muted uppercase tracking-wide mb-1.5">Period</p>
           <ChipPicker options={['daily', 'weekly', 'monthly', 'quarterly', 'annual'] as BudgetPeriod[]} value={editPeriod} onChange={setEditPeriod} />
         </div>
+        <div>
+          <p className="text-xs text-text-muted uppercase tracking-wide mb-1.5">Description</p>
+          <input
+            className="w-full px-3 py-2 rounded-lg bg-background border border-divider text-text-primary text-sm focus:outline-none focus:border-primary"
+            placeholder="Optional"
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+          />
+        </div>
       </Modal>
+
+      <ConfirmModal
+        open={!!deletingBudgetId}
+        title="Delete budget?"
+        message="Remove this budget? This cannot be undone."
+        loading={deleteLoading}
+        onConfirm={handleDeleteBudget}
+        onCancel={() => setDeletingBudgetId(null)}
+      />
     </div>
   );
 }
@@ -427,6 +527,8 @@ function GoalsTab() {
   const [editTarget, setEditTarget] = useState('');
   const [editType, setEditType] = useState<GoalType>('savings');
   const [editSaving, setEditSaving] = useState(false);
+  const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   function openEdit(g: Goal) { setEditing(g); setEditName(g.name); setEditTarget(String(g.targetAmount)); setEditType(g.type); }
 
@@ -448,10 +550,13 @@ function GoalsTab() {
     else toast.error('Failed to update goal');
   }
 
-  async function handleDelete(id: string, goalName: string) {
-    if (!confirm(`Remove "${goalName}"?`)) return;
-    const ok = await remove(id);
-    if (!ok) toast.error('Failed to delete goal');
+  async function handleDeleteGoal() {
+    if (!deletingGoal) return;
+    setDeleteLoading(true);
+    const ok = await remove(deletingGoal.id);
+    setDeleteLoading(false);
+    if (ok) setDeletingGoal(null);
+    else toast.error('Failed to delete goal');
   }
 
   return (
@@ -495,7 +600,7 @@ function GoalsTab() {
                   <button onClick={() => openEdit(g)} className="p-1.5 rounded-lg hover:bg-background text-primary">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
-                  <button onClick={() => handleDelete(g.id, g.name)} className="p-1.5 rounded-lg hover:bg-background text-danger">
+                  <button onClick={() => setDeletingGoal(g)} className="p-1.5 rounded-lg hover:bg-background text-danger" title="Delete">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                   </button>
                 </div>
@@ -531,6 +636,15 @@ function GoalsTab() {
           <ChipPicker options={['savings', 'debt', 'emergency', 'investment', 'custom'] as GoalType[]} value={editType} onChange={setEditType} />
         </div>
       </Modal>
+
+      <ConfirmModal
+        open={!!deletingGoal}
+        title="Delete goal?"
+        message={`Remove "${deletingGoal?.name}"? This cannot be undone.`}
+        loading={deleteLoading}
+        onConfirm={handleDeleteGoal}
+        onCancel={() => setDeletingGoal(null)}
+      />
     </div>
   );
 }
@@ -590,8 +704,9 @@ export default function SettingsPage() {
   const toast = useToastStore();
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
+
   async function handleLogout() {
-    if (!confirm('Are you sure you want to log out?')) return;
     await authApi.logout();
     clearAuth();
     toast.success('Logged out successfully');
@@ -609,7 +724,7 @@ export default function SettingsPage() {
           <p className="text-sm text-text-secondary">{user?.email}</p>
           <p className="text-xs text-text-muted mt-0.5">{user?.baseCurrency} · {user?.riskTolerance} risk</p>
         </div>
-        <button onClick={handleLogout} className="text-sm text-danger font-medium hover:opacity-70 flex-shrink-0">Log out</button>
+        <button onClick={() => setLogoutConfirm(true)} className="text-sm text-danger font-medium hover:opacity-70 flex-shrink-0">Log out</button>
       </Card>
 
       <div className="flex gap-1 overflow-x-auto mb-5 pb-1">
@@ -633,6 +748,15 @@ export default function SettingsPage() {
         {activeTab === 'goals'      && <GoalsTab />}
         {activeTab === 'currency'   && <CurrencyTab />}
       </Card>
+
+      <ConfirmModal
+        open={logoutConfirm}
+        title="Log out?"
+        message="Are you sure you want to log out?"
+        confirmLabel="Log out"
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutConfirm(false)}
+      />
     </div>
   );
 }

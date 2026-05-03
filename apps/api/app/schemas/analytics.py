@@ -11,6 +11,12 @@ class CategoryBreakdown(BaseModel):
     percentage: float
 
 
+class BudgetBreakdown(BaseModel):
+    budget_id: str
+    amount: float
+    count: int
+
+
 class DailyDataPoint(BaseModel):
     label: str        # "2024-01-15", "Mon", "Jan", etc.
     income: float
@@ -43,6 +49,7 @@ class TransactionAnalytics(BaseModel):
     savings_rate: float       # percentage (0–100)
 
     category_breakdown: list[CategoryBreakdown]
+    budget_breakdown: list[BudgetBreakdown]
     chart_data: list[DailyDataPoint]
 
 

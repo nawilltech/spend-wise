@@ -15,6 +15,11 @@ class BudgetPeriod(str, enum.Enum):
     annual    = "annual"
 
 
+class BudgetType(str, enum.Enum):
+    income  = "income"
+    expense = "expense"
+
+
 class Budget(Base):
     __tablename__ = "budgets"
 
@@ -24,9 +29,12 @@ class Budget(Base):
     amount:      Mapped[float]        = mapped_column(Numeric(14, 2), nullable=False)
     currency:    Mapped[str]          = mapped_column(String(3), nullable=False)
     period:      Mapped[BudgetPeriod] = mapped_column(SAEnum(BudgetPeriod), default=BudgetPeriod.monthly)
+    type:        Mapped[BudgetType]   = mapped_column(SAEnum(BudgetType), nullable=False, default=BudgetType.expense)
+    description: Mapped[str | None]   = mapped_column(String, nullable=True)
     is_active:   Mapped[bool]         = mapped_column(Boolean, default=True)
     created_at:  Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at:  Mapped[datetime]     = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    user     = relationship("User",     back_populates="budgets")
-    category = relationship("Category", back_populates="budgets")
+    user         = relationship("User",        back_populates="budgets")
+    category     = relationship("Category",    back_populates="budgets")
+    transactions = relationship("Transaction", back_populates="budget", foreign_keys="Transaction.budget_id")

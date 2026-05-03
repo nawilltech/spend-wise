@@ -17,7 +17,7 @@ import { useBudgets } from '@hooks/useBudgets';
 import { useGoals } from '@hooks/useGoals';
 import type {
   Category, CategoryCreate, CategoryType,
-  BudgetCreate, BudgetPeriod,
+  BudgetCreate, BudgetPeriod, BudgetType,
   Goal, GoalCreate, GoalType,
 } from '@/types';
 
@@ -49,15 +49,17 @@ function Chips<T extends string>({ options, selected, onSelect }: { options: T[]
   );
 }
 
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete?: () => void }) {
   return (
     <View style={styles.rowActions}>
       <TouchableOpacity onPress={onEdit} style={styles.actionBtn}>
         <Ionicons name="pencil-outline" size={16} color={Colors.primary} />
       </TouchableOpacity>
-      <TouchableOpacity onPress={onDelete} style={styles.actionBtn}>
-        <Ionicons name="trash-outline" size={16} color={Colors.danger} />
-      </TouchableOpacity>
+      {onDelete && (
+        <TouchableOpacity onPress={onDelete} style={styles.actionBtn}>
+          <Ionicons name="trash-outline" size={16} color={Colors.danger} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -92,7 +94,9 @@ function EditModal({
 // ── categories section ───────────────────────────────────────────────────────
 
 function CategoriesSection() {
-  const { categories, create, update, remove } = useCategories();
+  const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const { categories, create, update, remove } = useCategories(filterType === 'all' ? undefined : filterType, searchTerm);
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>('expense');
   const [saving, setSaving] = useState(false);
@@ -138,7 +142,17 @@ function CategoriesSection() {
 
   return (
     <View style={styles.sectionBody}>
-      <Text style={styles.fieldLabel}>Type</Text>
+      <Text style={styles.fieldLabel}>Show</Text>
+      <Chips options={['all', 'expense', 'income']} selected={filterType} onSelect={setFilterType} />
+      <TextInput
+        style={[styles.input, { marginTop: 8 }]}
+        placeholder="Search categories…"
+        placeholderTextColor={Colors.textMuted}
+        value={searchTerm}
+        onChangeText={setSearchTerm}
+        clearButtonMode="while-editing"
+      />
+      <Text style={styles.fieldLabel}>New Category Type</Text>
       <Chips options={['expense', 'income', 'both'] as CategoryType[]} selected={type} onSelect={setType} />
       <View style={styles.addRow}>
         <TextInput style={[styles.input, { flex: 1 }]} placeholder="Category name" placeholderTextColor={Colors.textMuted} value={name} onChangeText={setName} />
@@ -146,6 +160,9 @@ function CategoriesSection() {
           {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.addBtnText}>Add</Text>}
         </TouchableOpacity>
       </View>
+      {categories.length === 0 && searchTerm.trim() !== '' && (
+        <Text style={[styles.itemSub, { textAlign: 'center', paddingVertical: 12 }]}>No categories match "{searchTerm}"</Text>
+      )}
       {categories.map((c) => (
         <View key={c.id} style={styles.listItem}>
           <Text style={styles.itemIcon}>{c.icon || '📂'}</Text>
@@ -153,9 +170,10 @@ function CategoriesSection() {
             <Text style={styles.itemName}>{c.name}</Text>
             <Text style={styles.itemSub}>{c.type}</Text>
           </View>
-          {!c.isDefault && (
-            <RowActions onEdit={() => openEdit(c)} onDelete={() => handleDelete(c.id, c.name)} />
-          )}
+          <RowActions
+            onEdit={() => openEdit(c)}
+            onDelete={!c.isDefault ? () => handleDelete(c.id, c.name) : undefined}
+          />
         </View>
       ))}
 
@@ -255,25 +273,32 @@ function CategoryCombobox({
 }
 
 function BudgetsSection() {
-  const { budgets, create, update, remove } = useBudgets();
+  const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all');
+  const { budgets, create, update, remove } = useBudgets(filterType === 'all' ? undefined : filterType);
   const { categories, create: createCategory } = useCategories();
   const { user } = useAuthStore();
 
   const [catSelection, setCatSelection] = useState<{ id: string; name: string } | null>(null);
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<BudgetPeriod>('monthly');
+  const [budgetType, setBudgetType] = useState<BudgetType>('expense');
+  const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
   // edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editPeriod, setEditPeriod] = useState<BudgetPeriod>('monthly');
+  const [editType, setEditType] = useState<BudgetType>('expense');
+  const [editDescription, setEditDescription] = useState('');
   const [editSaving, setEditSaving] = useState(false);
 
-  function openEdit(b: { id: string; amount: number; period: BudgetPeriod }) {
+  function openEdit(b: { id: string; amount: number; period: BudgetPeriod; type: BudgetType; description?: string }) {
     setEditingId(b.id);
     setEditAmount(String(b.amount));
     setEditPeriod(b.period);
+    setEditType(b.type);
+    setEditDescription(b.description ?? '');
   }
 
   async function handleAdd() {
@@ -285,7 +310,6 @@ function BudgetsSection() {
     try {
       let categoryId = catSelection.id;
       if (!categoryId) {
-        // type-to-create: create the category first
         const newCat = await categoriesApi.create({ name: catSelection.name, type: 'expense' } as CategoryCreate);
         categoryId = newCat.id;
       }
@@ -294,9 +318,11 @@ function BudgetsSection() {
         amount: parseFloat(amount),
         currency: user?.baseCurrency ?? 'NGN',
         period,
+        type: budgetType,
+        description: description.trim() || undefined,
       };
       const ok = await create(payload);
-      if (ok) { setCatSelection(null); setAmount(''); }
+      if (ok) { setCatSelection(null); setAmount(''); setDescription(''); }
       else Alert.alert('Error', 'Failed to create budget');
     } catch {
       Alert.alert('Error', 'Failed to create budget');
@@ -308,7 +334,12 @@ function BudgetsSection() {
   async function handleSaveEdit() {
     if (!editingId) return;
     setEditSaving(true);
-    const ok = await update(editingId, { amount: parseFloat(editAmount), period: editPeriod });
+    const ok = await update(editingId, {
+      amount: parseFloat(editAmount),
+      period: editPeriod,
+      type: editType,
+      description: editDescription.trim() || undefined,
+    });
     setEditSaving(false);
     if (ok) setEditingId(null);
     else Alert.alert('Error', 'Failed to update budget');
@@ -328,6 +359,10 @@ function BudgetsSection() {
 
   return (
     <View style={styles.sectionBody}>
+      <Text style={styles.fieldLabel}>Show</Text>
+      <Chips options={['all', 'expense', 'income']} selected={filterType} onSelect={setFilterType} />
+      <Text style={styles.fieldLabel}>Budget Type</Text>
+      <Chips options={['expense', 'income'] as BudgetType[]} selected={budgetType} onSelect={setBudgetType} />
       <Text style={styles.fieldLabel}>Period</Text>
       <Chips options={['daily', 'weekly', 'monthly', 'quarterly', 'annual'] as BudgetPeriod[]} selected={period} onSelect={setPeriod} />
       <Text style={styles.fieldLabel}>Category</Text>
@@ -341,20 +376,30 @@ function BudgetsSection() {
           onChangeText={setAmount}
           keyboardType="numeric"
         />
-        <TouchableOpacity style={styles.addBtn} onPress={handleAdd} disabled={saving}>
-          {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.addBtnText}>Add</Text>}
-        </TouchableOpacity>
       </View>
+      <TextInput
+        style={[styles.input, { marginTop: 8 }]}
+        placeholder="Description (optional)"
+        placeholderTextColor={Colors.textMuted}
+        value={description}
+        onChangeText={setDescription}
+      />
+      <TouchableOpacity style={[styles.addBtn, { marginTop: 10, alignItems: 'center' }]} onPress={handleAdd} disabled={saving}>
+        {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.addBtnText}>Add Budget</Text>}
+      </TouchableOpacity>
 
       {budgets.map((b) => (
         <View key={b.id} style={styles.listItem}>
           <Text style={styles.itemIcon}>{b.category?.icon || '💰'}</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.itemName}>{b.category?.name}</Text>
-            <Text style={styles.itemSub}>{b.period} · {b.currency} {b.amount.toLocaleString()}</Text>
+            <Text style={styles.itemSub}>
+              {b.type} · {b.period} · {b.currency} {b.amount.toLocaleString()}
+            </Text>
+            {b.description ? <Text style={styles.itemSub}>{b.description}</Text> : null}
           </View>
           <RowActions
-            onEdit={() => openEdit({ id: b.id, amount: b.amount, period: b.period })}
+            onEdit={() => openEdit({ id: b.id, amount: b.amount, period: b.period, type: b.type, description: b.description })}
             onDelete={() => handleDelete(b.id)}
           />
         </View>
@@ -364,8 +409,12 @@ function BudgetsSection() {
         <View style={{ padding: 4, gap: 12 }}>
           <Text style={styles.fieldLabel}>Amount</Text>
           <TextInput style={styles.input} value={editAmount} onChangeText={setEditAmount} keyboardType="numeric" placeholderTextColor={Colors.textMuted} />
+          <Text style={styles.fieldLabel}>Budget Type</Text>
+          <Chips options={['expense', 'income'] as BudgetType[]} selected={editType} onSelect={setEditType} />
           <Text style={styles.fieldLabel}>Period</Text>
           <Chips options={['daily', 'weekly', 'monthly', 'quarterly', 'annual'] as BudgetPeriod[]} selected={editPeriod} onSelect={setEditPeriod} />
+          <Text style={styles.fieldLabel}>Description</Text>
+          <TextInput style={styles.input} value={editDescription} onChangeText={setEditDescription} placeholder="Optional" placeholderTextColor={Colors.textMuted} />
         </View>
       </EditModal>
     </View>

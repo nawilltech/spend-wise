@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { transactionsApi } from '@services/api/transactions';
-import type { Transaction, TransactionCreate, TransactionType } from '@/types';
+import type { Transaction, TransactionCreate, TransactionUpdate, TransactionType } from '@/types';
 
 interface UseTransactionsOptions {
   limit?: number;
   type?: TransactionType;
+  fromDate?: string;
+  toDate?: string;
   autoFetch?: boolean;
 }
 
 export function useTransactions(options: UseTransactionsOptions = {}) {
-  const { limit = 50, type, autoFetch = true } = options;
+  const { limit = 50, type, fromDate, toDate, autoFetch = true } = options;
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,19 +21,29 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     setLoading(true);
     setError(null);
     try {
-      const data = await transactionsApi.list({ limit, type: filterType ?? type });
+      const data = await transactionsApi.list({ limit, type: filterType ?? type, fromDate, toDate });
       setTransactions(data);
     } catch {
       setError('Failed to load transactions');
     } finally {
       setLoading(false);
     }
-  }, [limit, type]);
+  }, [limit, type, fromDate, toDate]);
 
   const create = useCallback(async (payload: TransactionCreate): Promise<Transaction | null> => {
     try {
       const tx = await transactionsApi.create(payload);
       setTransactions((prev) => [tx, ...prev]);
+      return tx;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const update = useCallback(async (id: string, payload: TransactionUpdate): Promise<Transaction | null> => {
+    try {
+      const tx = await transactionsApi.update(id, payload);
+      setTransactions((prev) => prev.map((t) => (t.id === id ? tx : t)));
       return tx;
     } catch {
       return null;
@@ -52,5 +64,5 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     if (autoFetch) fetch();
   }, [autoFetch, fetch]);
 
-  return { transactions, loading, error, refetch: fetch, create, remove };
+  return { transactions, loading, error, refetch: fetch, create, update, remove };
 }

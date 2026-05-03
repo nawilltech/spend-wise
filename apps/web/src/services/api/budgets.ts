@@ -5,12 +5,15 @@ interface BudgetUpdate {
   amount?: number;
   currency?: string;
   period?: string;
+  type?: string;
+  description?: string;
   isActive?: boolean;
 }
 
 export const budgetsApi = {
-  async list(): Promise<Budget[]> {
-    const { data } = await apiClient.get('/budgets');
+  async list(type?: string): Promise<Budget[]> {
+    const params = type ? { type } : undefined;
+    const { data } = await apiClient.get('/budgets', { params });
     return data;
   },
 

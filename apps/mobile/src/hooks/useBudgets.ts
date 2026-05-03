@@ -3,9 +3,9 @@ import { budgetsApi } from '@services/api/budgets';
 import { reportsApi } from '@services/api/reports';
 import type { Budget, BudgetCreate, BudgetWithSpent } from '@/types';
 
-interface BudgetUpdate { amount?: number; currency?: string; period?: string }
+interface BudgetUpdate { amount?: number; currency?: string; period?: string; type?: string; description?: string }
 
-export function useBudgets() {
+export function useBudgets(filterType?: string) {
   const [budgets, setBudgets] = useState<BudgetWithSpent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export function useBudgets() {
     setError(null);
     try {
       const [rawBudgets, analytics] = await Promise.all([
-        budgetsApi.list(),
+        budgetsApi.list(filterType),
         reportsApi.getAnalytics('monthly').catch(() => null),
       ]);
 
@@ -43,7 +43,7 @@ export function useBudgets() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterType]);
 
   const create = useCallback(async (payload: BudgetCreate): Promise<Budget | null> => {
     try {

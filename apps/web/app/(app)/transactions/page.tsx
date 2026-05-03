@@ -3,12 +3,18 @@
 import { useState } from 'react';
 import { TransactionItem } from '@/components/transactions/TransactionItem';
 import { AddTransactionModal } from '@/components/transactions/AddTransactionModal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
+import { useBudgets } from '@/hooks/useBudgets';
+import { useToastStore } from '@/store/toast.store';
+import { getApiError } from '@/lib/api-error';
 import { cn } from '@/lib/utils';
-import type { TransactionType } from '@/types';
+import type { Transaction, TransactionType } from '@/types';
 
 type Filter = 'all' | TransactionType;
+type ModalMode = { mode: 'create' } | { mode: 'edit'; tx: Transaction };
+
 const FILTERS: { label: string; value: Filter }[] = [
   { label: 'All', value: 'all' },
   { label: 'Income', value: 'income' },
@@ -17,18 +23,46 @@ const FILTERS: { label: string; value: Filter }[] = [
 
 export default function TransactionsPage() {
   const [filter, setFilter] = useState<Filter>('all');
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const toast = useToastStore();
 
-  const { transactions, loading, refetch, create } = useTransactions({
+  const { transactions, loading, refetch, create, update, remove } = useTransactions({
     limit: 100,
     type: filter === 'all' ? undefined : filter,
   });
   const { categories } = useCategories();
+  const { budgets } = useBudgets();
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
 
   async function handleCreate(payload: Parameters<typeof create>[0]) {
     await create(payload);
     await refetch();
+  }
+
+  async function handleUpdate(tx: Transaction, payload: Parameters<typeof create>[0]) {
+    try {
+      await update(tx.id, payload);
+    } catch (err) {
+      throw new Error(getApiError(err, 'Failed to update transaction'));
+    }
+  }
+
+  async function handleDelete() {
+    if (!deletingTx) return;
+    setDeleteLoading(true);
+    try {
+      const ok = await remove(deletingTx.id);
+      if (ok) {
+        toast.success('Transaction deleted');
+        setDeletingTx(null);
+      } else {
+        toast.error('Failed to delete transaction');
+      }
+    } finally {
+      setDeleteLoading(false);
+    }
   }
 
   return (
@@ -82,6 +116,8 @@ export default function TransactionsPage() {
                 categoryName={cat?.name ?? 'Uncategorised'}
                 categoryIcon={cat?.icon ?? '💳'}
                 date={new Date(tx.transactionDate)}
+                onEdit={() => setModalMode({ mode: 'edit', tx })}
+                onDelete={() => setDeletingTx(tx)}
               />
             );
           })}
@@ -90,17 +126,35 @@ export default function TransactionsPage() {
 
       {/* FAB */}
       <button
-        onClick={() => setModalVisible(true)}
+        onClick={() => setModalMode({ mode: 'create' })}
         className="fixed bottom-24 right-6 md:bottom-8 md:right-8 w-14 h-14 rounded-full bg-primary text-white text-3xl flex items-center justify-center shadow-lg hover:opacity-90 transition-opacity z-20"
       >
         +
       </button>
 
       <AddTransactionModal
-        visible={modalVisible}
+        key={modalMode?.mode === 'edit' ? modalMode.tx.id : 'new'}
+        visible={modalMode !== null}
         categories={categories}
-        onClose={() => setModalVisible(false)}
-        onSubmit={handleCreate}
+        budgets={budgets}
+        initial={modalMode?.mode === 'edit' ? modalMode.tx : undefined}
+        onClose={() => setModalMode(null)}
+        onSubmit={async (payload) => {
+          if (modalMode?.mode === 'edit') {
+            await handleUpdate(modalMode.tx, payload);
+          } else {
+            await handleCreate(payload);
+          }
+        }}
+      />
+
+      <ConfirmModal
+        open={!!deletingTx}
+        title="Delete transaction?"
+        message={`Remove "${deletingTx?.description || 'this transaction'}"? This cannot be undone.`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+        onCancel={() => setDeletingTx(null)}
       />
     </div>
   );

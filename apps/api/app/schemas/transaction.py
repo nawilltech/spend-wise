@@ -9,6 +9,7 @@ class TransactionCreate(BaseModel):
     amount: float
     currency: str
     category_id: str | None = None
+    budget_id: str | None = None
     description: str = ""
     note: str | None = None
     voice_input: str | None = None
@@ -20,6 +21,7 @@ class TransactionUpdate(BaseModel):
     amount: float | None = None
     currency: str | None = None
     category_id: str | None = None
+    budget_id: str | None = None
     description: str | None = None
     note: str | None = None
     transaction_date: datetime | None = None
@@ -34,6 +36,7 @@ class TransactionResponse(BaseModel):
     base_amount: float
     base_currency: str
     category_id: str | None
+    budget_id: str | None
     description: str
     note: str | None
     idempotency_key: str | None

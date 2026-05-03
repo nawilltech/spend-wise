@@ -31,6 +31,7 @@ class Transaction(Base):
     base_amount:      Mapped[float]           = mapped_column(Numeric(14, 2), nullable=False)
     base_currency:    Mapped[str]             = mapped_column(String(3), nullable=False)
     category_id:      Mapped[str]             = mapped_column(ForeignKey("categories.id"), nullable=True)
+    budget_id:        Mapped[Optional[str]]   = mapped_column(ForeignKey("budgets.id"), nullable=True)
     description:      Mapped[str]             = mapped_column(String(500), default="")
     note:             Mapped[Optional[str]]   = mapped_column(Text, nullable=True)
     voice_input:      Mapped[Optional[str]]   = mapped_column(Text, nullable=True)
@@ -42,3 +43,4 @@ class Transaction(Base):
 
     user     = relationship("User",     back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
+    budget   = relationship("Budget",   back_populates="transactions", foreign_keys=[budget_id])

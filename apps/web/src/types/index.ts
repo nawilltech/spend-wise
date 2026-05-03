@@ -27,6 +27,7 @@ export interface Transaction {
   baseAmount: number;
   baseCurrency: string;
   categoryId: string | null;
+  budgetId?: string | null;
   description: string;
   note?: string | null;
   voiceInput?: string | null;
@@ -42,6 +43,7 @@ export interface TransactionCreate {
   amount: number;
   currency: string;
   categoryId?: string | null;
+  budgetId?: string | null;
   description?: string;
   note?: string;
   idempotencyKey?: string;
@@ -52,6 +54,7 @@ export interface TransactionUpdate {
   amount?: number;
   currency?: string;
   categoryId?: string | null;
+  budgetId?: string | null;
   description?: string;
   note?: string;
   transactionDate?: string;
@@ -89,6 +92,7 @@ export interface CategoryCreate {
 }
 
 export type BudgetPeriod = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annual';
+export type BudgetType = 'income' | 'expense';
 
 export interface BudgetCategory {
   id: string;
@@ -111,6 +115,8 @@ export interface Budget {
   amount: number;
   currency: string;
   period: BudgetPeriod;
+  type: BudgetType;
+  description?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -123,6 +129,8 @@ export interface BudgetCreate {
   amount: number;
   currency: string;
   period?: BudgetPeriod;
+  type?: BudgetType;
+  description?: string;
 }
 
 export interface BudgetWithSpent extends Budget {
@@ -172,6 +180,12 @@ export interface ChartDataPoint {
   net: number;
 }
 
+export interface BudgetBreakdown {
+  budgetId: string;
+  amount: number;
+  count: number;
+}
+
 export interface TransactionAnalytics {
   period: AnalyticsPeriod;
   startDate: string;
@@ -192,6 +206,7 @@ export interface TransactionAnalytics {
   netSavings: number;
   savingsRate: number;
   categoryBreakdown: CategoryBreakdown[];
+  budgetBreakdown: BudgetBreakdown[];
   chartData: ChartDataPoint[];
 }
 

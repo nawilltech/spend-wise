@@ -4,8 +4,11 @@ import type { Category, CategoryCreate } from '@/types';
 interface CategoryUpdate { name?: string; icon?: string; color?: string; type?: string }
 
 export const categoriesApi = {
-  async list(): Promise<Category[]> {
-    const { data } = await apiClient.get('/categories');
+  async list(type?: string, term?: string): Promise<Category[]> {
+    const params: Record<string, string> = {};
+    if (type) params.type = type;
+    if (term) params.term = term;
+    const { data } = await apiClient.get('/categories', { params: Object.keys(params).length ? params : undefined });
     return data;
   },
 
