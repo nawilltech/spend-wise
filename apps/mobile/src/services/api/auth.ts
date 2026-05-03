@@ -2,6 +2,8 @@ import * as SecureStore from 'expo-secure-store';
 import { apiClient } from './client';
 import type { User } from '@/types';
 
+interface UpdateProfilePayload { name?: string; baseCurrency?: string; location?: string; riskTolerance?: string }
+
 interface LoginPayload { email: string; password: string }
 interface RegisterPayload { email: string; password: string; name: string; baseCurrency: string; location: string }
 interface ForgotPasswordPayload { email: string }
@@ -46,5 +48,10 @@ export const authApi = {
 
   async resetPassword(payload: ResetPasswordPayload): Promise<void> {
     await apiClient.post('/auth/reset-password', payload);
+  },
+
+  async updateProfile(payload: UpdateProfilePayload): Promise<User> {
+    const { data } = await apiClient.patch('/auth/me', payload);
+    return data;
   },
 };

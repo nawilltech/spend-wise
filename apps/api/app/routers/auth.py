@@ -7,6 +7,7 @@ from app.schemas.auth import (
     RegisterRequest, LoginRequest, AuthResponse, UserResponse,
     RefreshRequest, TokenResponse,
     ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest,
+    UserUpdate,
 )
 from app.services.auth_service import auth_service, LoginError
 from app.models.user import User
@@ -96,6 +97,11 @@ async def logout(user: User = Depends(get_current_user)):
 @router.get("/me", response_model=UserResponse)
 async def me(user: User = Depends(get_current_user)):
     return user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(body: UserUpdate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return await auth_service.update_profile(db, user, body)
 
 
 @router.get("/verify-email", response_class=HTMLResponse)

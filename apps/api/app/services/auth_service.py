@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.config import settings
 from app.models.user import User
-from app.schemas.auth import RegisterRequest, AuthResponse, UserResponse, TokenResponse
+from app.schemas.auth import RegisterRequest, AuthResponse, UserResponse, TokenResponse, UserUpdate
 from app.services.email_service import send_otp_email, send_verification_email
 
 ALGORITHM = "HS256"
@@ -208,6 +208,19 @@ class AuthService:
         user.updated_at = now
         await db.flush()
         return True
+
+    async def update_profile(self, db: AsyncSession, user: User, data: UserUpdate) -> UserResponse:
+        if data.name is not None:
+            user.name = data.name
+        if data.base_currency is not None:
+            user.base_currency = data.base_currency
+        if data.location is not None:
+            user.location = data.location
+        if data.risk_tolerance is not None:
+            user.risk_tolerance = data.risk_tolerance
+        user.updated_at = datetime.now(tz=timezone.utc)
+        await db.flush()
+        return UserResponse.model_validate(user)
 
 
 auth_service = AuthService()

@@ -45,6 +45,13 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class UserUpdate(BaseModel):
+    name: str | None = None
+    base_currency: str | None = None
+    location: str | None = None
+    risk_tolerance: str | None = None
+
+
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
