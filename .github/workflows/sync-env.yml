@@ -1,0 +1,68 @@
+name: Sync Environment Variables
+
+# Run manually from GitHub Actions tab whenever you add or change a secret
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-render-api:
+    name: Sync → Render API service
+    runs-on: ubuntu-latest
+    steps:
+      - name: Push env vars to spendwise-api
+        run: |
+          curl -sf -X PUT "https://api.render.com/v1/services/${{ secrets.RENDER_API_SERVICE_ID }}/env-vars" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '[
+              {"key":"SECRET_KEY",                    "value":"${{ secrets.SECRET_KEY }}"},
+              {"key":"ACCESS_TOKEN_EXPIRE_MINUTES",   "value":"60"},
+              {"key":"REFRESH_TOKEN_EXPIRE_DAYS",     "value":"30"},
+              {"key":"ENVIRONMENT",                   "value":"production"},
+              {"key":"DEBUG",                         "value":"false"},
+              {"key":"SMTP_HOST",                     "value":"${{ secrets.SMTP_HOST }}"},
+              {"key":"SMTP_PORT",                     "value":"587"},
+              {"key":"SMTP_USER",                     "value":"${{ secrets.SMTP_USER }}"},
+              {"key":"SMTP_PASSWORD",                 "value":"${{ secrets.SMTP_PASSWORD }}"},
+              {"key":"SMTP_FROM",                     "value":"noreply@spendwise.app"},
+              {"key":"GEMINI_API_KEY",                "value":"${{ secrets.GEMINI_API_KEY }}"},
+              {"key":"GROQ_API_KEY",                  "value":"${{ secrets.GROQ_API_KEY }}"},
+              {"key":"OPEN_EXCHANGE_RATES_APP_ID",    "value":"${{ secrets.OPEN_EXCHANGE_RATES_APP_ID }}"},
+              {"key":"ALLOWED_ORIGINS",               "value":"${{ secrets.ALLOWED_ORIGINS }}"}
+            ]'
+
+  sync-render-worker:
+    name: Sync → Render Celery worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Push env vars to spendwise-worker
+        run: |
+          curl -sf -X PUT "https://api.render.com/v1/services/${{ secrets.RENDER_WORKER_SERVICE_ID }}/env-vars" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '[
+              {"key":"SECRET_KEY",                 "value":"${{ secrets.SECRET_KEY }}"},
+              {"key":"ENVIRONMENT",                "value":"production"},
+              {"key":"DEBUG",                      "value":"false"},
+              {"key":"GEMINI_API_KEY",             "value":"${{ secrets.GEMINI_API_KEY }}"},
+              {"key":"GROQ_API_KEY",               "value":"${{ secrets.GROQ_API_KEY }}"},
+              {"key":"OPEN_EXCHANGE_RATES_APP_ID", "value":"${{ secrets.OPEN_EXCHANGE_RATES_APP_ID }}"}
+            ]'
+
+  sync-vercel:
+    name: Sync → Vercel web app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Push env vars to Vercel
+        run: |
+          # Remove existing values first so upsert works cleanly
+          vercel env rm NEXT_PUBLIC_API_URL production --yes --token=${{ secrets.VERCEL_TOKEN }} 2>/dev/null || true
+
+          # Add production env vars
+          echo "${{ secrets.NEXT_PUBLIC_API_URL }}" | \
+            vercel env add NEXT_PUBLIC_API_URL production \
+              --token=${{ secrets.VERCEL_TOKEN }} \
+              --project=${{ secrets.VERCEL_PROJECT_ID }}
