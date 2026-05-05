@@ -66,7 +66,7 @@ services:
     plan: starter
     branch: main
     autoDeploy: true
-    startCommand: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+    dockerCommand: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -98,6 +98,7 @@ services:
     name: spendwise-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []   # internal only — only reachable by other Render services
 
 # ── PostgreSQL ─────────────────────────────────────────────────────
 databases:
