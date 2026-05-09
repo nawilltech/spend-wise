@@ -36,3 +36,18 @@ jobs:
           DATABASE_URL: sqlite+aiosqlite:///./test.db
           SECRET_KEY: ci-test-secret-key-not-for-production
           REDIS_URL: redis://localhost:6379/0
+
+  # Trigger Render deploy only on pushes to main (not on PRs)
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy API to Render
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_API_DEPLOY_HOOK_URL }}"
+
+      - name: Deploy Worker to Render
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_WORKER_DEPLOY_HOOK_URL }}"

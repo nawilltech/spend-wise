@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_verified_user
 from app.models.user import User
 from app.schemas.ai import (
     ParseVoiceRequest, ParsedExpenseResponse,
@@ -17,7 +17,7 @@ router = APIRouter()
 @router.post("/parse-voice", response_model=ParsedExpenseResponse)
 async def parse_voice_expense(
     body: ParseVoiceRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     return await ai_service.parse_voice_expense(body.text, body.base_currency or user.base_currency)
 
@@ -25,7 +25,7 @@ async def parse_voice_expense(
 @router.get("/budget-advice", response_model=BudgetAdviceResponse)
 async def get_budget_advice(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     summary = await analysis_service.get_monthly_summary(db, user.id, user.base_currency)
     return await ai_service.get_budget_advice(summary, user)
@@ -34,7 +34,7 @@ async def get_budget_advice(
 @router.get("/investment-suggestions", response_model=InvestmentSuggestionsResponse)
 async def get_investment_suggestions(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     summary = await analysis_service.get_monthly_summary(db, user.id, user.base_currency)
     return await ai_service.get_investment_suggestions(summary, user)
@@ -44,7 +44,7 @@ async def get_investment_suggestions(
 async def ask_question(
     body: AskQuestionRequest,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_verified_user),
 ):
     context = await analysis_service.get_monthly_summary(db, user.id, user.base_currency)
     answer = await ai_service.answer_question(body.question, context, user)

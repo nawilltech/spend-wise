@@ -8,17 +8,24 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://spendwise:password@localhost:5432/spendwise"
     redis_url: str = "redis://localhost:6379/0"
+    api_base_url: str = "http://localhost:8000"
 
     secret_key: str = "dev-secret-key-change-in-production"
     access_token_expire_minutes: int = 60
     refresh_token_expire_days: int = 30
+
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@spendwise.app"
 
     gemini_api_key: str = ""
     groq_api_key: str = ""
     open_exchange_rates_app_id: str = ""
 
     # Stored as comma-separated string to avoid pydantic-settings JSON-decode issue
-    allowed_origins: str = "http://localhost:8081"
+    allowed_origins: str = "http://localhost:8081,http://localhost:3000"
     environment: str = "development"
     debug: bool = True
 

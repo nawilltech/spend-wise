@@ -1,56 +1,84 @@
-from fastapi import APIRouter, Depends, HTTPException
+from __future__ import annotations
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
+from sqlalchemy.orm import selectinload
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_verified_user
 from app.models.user import User
-from app.models.budget import Budget, BudgetPeriod
+from app.models.budget import Budget, BudgetType
+from app.schemas.budget import BudgetCreate, BudgetUpdate, BudgetResponse
 
 router = APIRouter()
 
-
-class BudgetCreate(BaseModel):
-    category_id: str
-    amount: float
-    currency: str
-    period: BudgetPeriod = BudgetPeriod.monthly
+_with_relations = (selectinload(Budget.user), selectinload(Budget.category))
 
 
-class BudgetResponse(BaseModel):
-    id: str; user_id: str; category_id: str; amount: float
-    currency: str; period: BudgetPeriod; is_active: bool
-    model_config = {"from_attributes": True}
+async def _get_budget(db: AsyncSession, budget_id: str, user_id: str) -> Budget:
+    result = await db.execute(
+        select(Budget)
+        .where(Budget.id == budget_id, Budget.user_id == user_id)
+        .options(*_with_relations)
+    )
+    budget = result.scalar_one_or_none()
+    if not budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    return budget
 
 
 @router.get("", response_model=list[BudgetResponse])
-async def list_budgets(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    result = await db.execute(select(Budget).where(Budget.user_id == user.id, Budget.is_active == True))
+async def list_budgets(
+    budget_type: BudgetType | None = Query(None, alias="type"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_verified_user),
+):
+    q = (
+        select(Budget)
+        .where(Budget.user_id == user.id, Budget.is_active == True)
+        .options(*_with_relations)
+        .order_by(Budget.created_at.desc())
+    )
+    if budget_type is not None:
+        q = q.where(Budget.type == budget_type)
+    result = await db.execute(q)
     return result.scalars().all()
 
 
 @router.post("", response_model=BudgetResponse, status_code=201)
-async def create_budget(body: BudgetCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def create_budget(
+    body: BudgetCreate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_verified_user),
+):
     budget = Budget(user_id=user.id, **body.model_dump())
     db.add(budget)
     await db.flush()
-    return budget
+    return await _get_budget(db, budget.id, user.id)
 
 
 @router.patch("/{budget_id}", response_model=BudgetResponse)
-async def update_budget(budget_id: str, body: BudgetCreate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == user.id))
-    budget = result.scalar_one_or_none()
-    if not budget:
-        raise HTTPException(status_code=404, detail="Budget not found")
+async def update_budget(
+    budget_id: str,
+    body: BudgetUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_verified_user),
+):
+    budget = await _get_budget(db, budget_id, user.id)
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(budget, field, value)
-    return budget
+    await db.flush()
+    return await _get_budget(db, budget.id, user.id)
 
 
 @router.delete("/{budget_id}", status_code=204)
-async def delete_budget(budget_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    result = await db.execute(select(Budget).where(Budget.id == budget_id, Budget.user_id == user.id))
+async def delete_budget(
+    budget_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_verified_user),
+):
+    result = await db.execute(
+        select(Budget).where(Budget.id == budget_id, Budget.user_id == user.id)
+    )
     budget = result.scalar_one_or_none()
     if not budget:
         raise HTTPException(status_code=404, detail="Budget not found")

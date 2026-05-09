@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AnalyticsPeriod } from '@types/index';
+import type { AnalyticsPeriod } from '@/types';
 
 interface UIState {
   isOnline: boolean;
