@@ -53,9 +53,8 @@ export default function LoginScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
-        <Text style={styles.logo}>💰</Text>
-        <Text style={styles.title}>SpendWise</Text>
-        <Text style={styles.subtitle}>Your personal finance advisor</Text>
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.subtitle}>Log in to your SpendWise account</Text>
       </View>
 
       <View style={styles.form}>
@@ -100,9 +99,8 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container:   { flexGrow: 1, backgroundColor: Colors.background, padding: 24, justifyContent: 'center' },
-  header:      { alignItems: 'center', marginBottom: 40, gap: 8 },
-  logo:        { fontSize: 56 },
-  title:       { fontSize: 28, fontWeight: '700', color: Colors.textPrimary },
+  header:      { alignItems: 'center', marginBottom: 40, gap: 6 },
+  title:       { fontSize: 26, fontWeight: '700', color: Colors.textPrimary },
   subtitle:    { fontSize: 15, color: Colors.textSecondary },
   form:        { gap: 16 },
   attemptText: { fontSize: 12, color: Colors.danger, fontWeight: '500', marginTop: 6 },
