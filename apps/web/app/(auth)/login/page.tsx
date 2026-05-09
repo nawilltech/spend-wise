@@ -46,9 +46,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <div className="text-6xl mb-3">💰</div>
-          <h1 className="text-3xl font-bold text-text-primary">SpendWise</h1>
-          <p className="text-text-secondary mt-1.5">Your personal finance advisor</p>
+          <h1 className="text-3xl font-bold text-text-primary">Welcome back</h1>
+          <p className="text-text-secondary mt-1.5">Log in to your SpendWise account</p>
         </div>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">

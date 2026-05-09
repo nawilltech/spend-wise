@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Pressable } from 'react-native';
 import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { Button } from '@components/common/Button';
 import { Colors } from '@constants/colors';
 
@@ -37,6 +38,12 @@ export default function LandingScreen() {
       <View style={styles.actions}>
         <Button label="Get started" onPress={() => router.push('/(auth)/register')} size="lg" />
         <Button label="I already have an account" onPress={() => router.push('/(auth)/login')} variant="ghost" size="lg" />
+        <View style={styles.poweredBy}>
+          <Text style={styles.poweredByText}>Powered by </Text>
+          <Pressable onPress={() => Linking.openURL('https://nawill.ng')}>
+            <Text style={styles.poweredByLink}>Nawill</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -59,4 +66,7 @@ const styles = StyleSheet.create({
   featureDesc:  { fontSize: 13, color: Colors.textSecondary, lineHeight: 19 },
 
   actions:      { gap: 12 },
+  poweredBy:    { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
+  poweredByText:{ fontSize: 12, color: Colors.textMuted },
+  poweredByLink:{ fontSize: 12, color: Colors.primary, fontWeight: '600' },
 });
