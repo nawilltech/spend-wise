@@ -16,7 +16,7 @@ export function useBudgets(filterType?: string) {
     try {
       const [rawBudgets, analytics] = await Promise.all([
         budgetsApi.list(filterType),
-        reportsApi.getAnalytics('monthly').catch(() => null),
+        reportsApi.getAnalytics({ period: 'monthly' }).catch(() => null),
       ]);
 
       // Build a map of categoryId → spent amount from analytics
