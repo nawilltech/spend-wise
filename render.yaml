@@ -12,7 +12,7 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     plan: starter
-    branch: main
+    branch: dev
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -64,7 +64,7 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     plan: starter
-    branch: main
+    branch: dev
     autoDeploy: true
     dockerCommand: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
     envVars:

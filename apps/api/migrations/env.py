@@ -16,9 +16,14 @@ import app.models.category      # noqa: F401
 import app.models.budget        # noqa: F401
 import app.models.goal          # noqa: F401
 
+from app.config import settings
+
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override alembic.ini URL with the runtime value so DATABASE_URL env var is respected
+config.set_main_option("sqlalchemy.url", settings.async_database_url)
 
 target_metadata = Base.metadata
 
