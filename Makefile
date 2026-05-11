@@ -133,9 +133,9 @@ docker-verify:
 	@until docker compose exec postgres pg_isready -U spendwise -d spendwise > /dev/null 2>&1; do sleep 1; done
 	docker build -t spendwise-api:local ./apps/api
 	docker run --rm \
-	  --network host \
-	  -e DATABASE_URL=postgresql+asyncpg://spendwise:password@localhost:5432/spendwise \
-	  -e REDIS_URL=redis://localhost:6379/0 \
+	  --network spending-advisor_default \
+	  -e DATABASE_URL=postgresql+asyncpg://spendwise:password@postgres:5432/spendwise \
+	  -e REDIS_URL=redis://redis:6379/0 \
 	  -e SECRET_KEY=local-verify-key \
 	  -e ENVIRONMENT=development \
 	  -e ALLOWED_ORIGINS=http://localhost:3000 \
