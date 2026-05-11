@@ -7,6 +7,15 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, env_file_encoding="utf-8")
 
     database_url: str = "postgresql+asyncpg://spendwise:password@localhost:5432/spendwise"
+
+    @property
+    def async_database_url(self) -> str:
+        url = self.database_url
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
     redis_url: str = "redis://localhost:6379/0"
     api_base_url: str = "http://localhost:8000"
 
