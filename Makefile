@@ -1,6 +1,6 @@
 .PHONY: setup dev dev-api dev-mobile dev-web lint test clean \
         build-android build-ios release-preview release-production \
-        deploy-api docker-build
+        deploy-api docker-build docker-up docker-down docker-verify
 
 # ── Setup ────────────────────────────────────────────────────────────
 setup: setup-mobile setup-api setup-web
@@ -118,6 +118,30 @@ submit-android:
 docker-build:
 	docker build -t spendwise-api:local ./apps/api
 
+# Start local Postgres + Redis (required for dev-api and docker-verify)
+docker-up:
+	docker compose up -d postgres redis
+
+docker-down:
+	docker compose down
+
+# Build Docker image and run it against local Postgres + Redis.
+# Runs migrations + starts the server so you can catch errors before pushing.
+docker-verify:
+	docker compose up -d postgres redis
+	@echo "Waiting for Postgres to be ready..."
+	@until docker compose exec postgres pg_isready -U spendwise -d spendwise > /dev/null 2>&1; do sleep 1; done
+	docker build -t spendwise-api:local ./apps/api
+	docker run --rm \
+	  --network spending-advisor_default \
+	  -e DATABASE_URL=postgresql+asyncpg://spendwise:password@postgres:5432/spendwise \
+	  -e REDIS_URL=redis://redis:6379/0 \
+	  -e SECRET_KEY=local-verify-key \
+	  -e ENVIRONMENT=development \
+	  -e ALLOWED_ORIGINS=http://localhost:3000 \
+	  -p 8000:8000 \
+	  spendwise-api:local
+
 # Manually trigger Render deploy via webhook
 # Usage: RENDER_HOOK=<your-hook-url> make deploy-api
 deploy-api:
@@ -130,9 +154,3 @@ clean:
 
 format-api:
 	cd apps/api && . .venv/bin/activate && ruff format app/ tests/
-
-docker-up:
-	docker-compose up -d postgres redis
-
-docker-down:
-	docker-compose down
