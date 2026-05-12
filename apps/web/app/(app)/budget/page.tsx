@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useBudgets } from '@/hooks/useBudgets';
@@ -25,10 +26,18 @@ export default function BudgetPage() {
       ) : error ? (
         <Card><p className="text-danger text-center py-4">{error}</p></Card>
       ) : active.length === 0 ? (
-        <Card className="flex flex-col items-center gap-3 py-10">
+        <Card className="flex flex-col items-center gap-3 py-12">
           <span className="text-5xl">🎯</span>
           <p className="text-lg font-semibold text-text-primary">No budgets yet</p>
-          <p className="text-sm text-text-secondary text-center">Set spending limits per category to stay on track.</p>
+          <p className="text-sm text-text-secondary text-center max-w-xs">
+            Set spending limits per category to stay on track.
+          </p>
+          <Link
+            href="/settings"
+            className="mt-2 px-5 py-2 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors"
+          >
+            Go to Settings
+          </Link>
         </Card>
       ) : (
         <>
