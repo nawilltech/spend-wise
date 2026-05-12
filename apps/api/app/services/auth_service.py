@@ -100,7 +100,6 @@ class AuthService:
             hashed_password=self._hash_password(data.password),
             base_currency=data.base_currency,
             location=data.location,
-            email_verified=True,  # TODO: remove once email service is confirmed working
         )
         db.add(user)
         await db.flush()

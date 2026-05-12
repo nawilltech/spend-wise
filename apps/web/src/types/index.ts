@@ -253,6 +253,64 @@ export interface ExchangeRates {
   fetchedAt: number;
 }
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  baseCurrency: string;
+  location: string;
+  riskTolerance: string;
+  role: string;
+  emailVerified: boolean;
+  createdAt: string;
+  transactionCount: number;
+  totalIncome: number;
+  totalExpense: number;
+}
+
+export interface AdminUserUpdate {
+  name?: string;
+  email?: string;
+  role?: string;
+  base_currency?: string;
+  location?: string;
+  email_verified?: boolean;
+}
+
+export interface AdminTransaction {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  type: 'income' | 'expense';
+  amount: number;
+  currency: string;
+  baseAmount: number;
+  baseCurrency: string;
+  description: string;
+  transactionDate: string;
+  createdAt: string;
+}
+
+export interface AdminAnalytics {
+  period: string;
+  startDate: string;
+  endDate: string;
+  currency: string;
+  totalVolume: number;
+  entryCount: number;
+  incomeCount: number;
+  expenseCount: number;
+  totalIncome: number;
+  totalExpense: number;
+  netSavings: number;
+  savingsRate: number;
+  userCount: number;
+  activeUsers: number;
+  categoryBreakdown: { categoryId: string | null; categoryName: string | null; amount: number; count: number; percentage: number }[];
+  chartData: { label: string; income: number; expense: number; net: number }[];
+}
+
 export interface ApiError {
   detail: string;
   status: number;

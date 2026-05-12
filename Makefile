@@ -131,8 +131,10 @@ docker-verify:
 	docker compose up -d postgres redis
 	@echo "Waiting for Postgres to be ready..."
 	@until docker compose exec postgres pg_isready -U spendwise -d spendwise > /dev/null 2>&1; do sleep 1; done
+	@-docker stop spendwise-api-local 2>/dev/null || true
+	@-lsof -ti :8000 | xargs kill -9 2>/dev/null || true
 	docker build -t spendwise-api:local ./apps/api
-	docker run --rm \
+	docker run --rm --name spendwise-api-local \
 	  --network spending-advisor_default \
 	  -e DATABASE_URL=postgresql+asyncpg://spendwise:password@postgres:5432/spendwise \
 	  -e REDIS_URL=redis://redis:6379/0 \
