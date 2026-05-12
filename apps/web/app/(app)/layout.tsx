@@ -52,7 +52,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.replace('/login');
       return;
     }
-    authApi.me().then(setUser).catch(() => {
+    authApi.me().then((me) => {
+      setUser(me);
+      if (me.role === 'admin' && !window.location.pathname.startsWith('/admin')) {
+        router.replace('/admin/dashboard');
+      }
+    }).catch(() => {
       clearAuth();
       router.replace('/login');
     });
@@ -64,7 +69,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <div className="flex-1 md:ml-60 flex flex-col">
-        {user && !user.emailVerified && <VerificationBanner />}
+        {user && !user.emailVerified && user.role !== 'admin' && <VerificationBanner />}
         <main className="flex-1 pb-20 md:pb-0">
           {children}
         </main>

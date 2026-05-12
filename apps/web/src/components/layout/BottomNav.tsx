@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/auth.store';
 
-const NAV = [
+const USER_NAV = [
   { href: '/dashboard',    icon: '🏠', label: 'Home'    },
   { href: '/transactions', icon: '↕️',  label: 'Txns'   },
   { href: '/budget',       icon: '🥧', label: 'Budget'  },
@@ -12,12 +13,20 @@ const NAV = [
   { href: '/settings',     icon: '⚙️',  label: 'Settings'},
 ];
 
+const ADMIN_NAV = [
+  { href: '/admin/dashboard',    icon: '📊', label: 'Overview' },
+  { href: '/admin/users',        icon: '👥', label: 'Users'    },
+  { href: '/admin/transactions', icon: '↕️',  label: 'Txns'    },
+];
+
 export function BottomNav() {
   const pathname = usePathname();
+  const { user } = useAuthStore();
+  const nav = user?.role === 'admin' ? ADMIN_NAV : USER_NAV;
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-border z-30 flex">
-      {NAV.map((item) => {
+      {nav.map((item) => {
         const active = pathname === item.href || pathname.startsWith(item.href + '/');
         return (
           <Link

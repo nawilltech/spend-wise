@@ -61,10 +61,37 @@ class AdminUserSummary(BaseModel):
     location: str
     risk_tolerance: str
     role: str
+    email_verified: bool
     created_at: datetime
     transaction_count: int
     total_income: float
     total_expense: float
+
+    model_config = {"from_attributes": True}
+
+
+class AdminUserUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    role: str | None = None
+    base_currency: str | None = None
+    location: str | None = None
+    email_verified: bool | None = None
+
+
+class AdminTransactionItem(BaseModel):
+    id: str
+    user_id: str
+    user_email: str
+    user_name: str
+    type: str
+    amount: float
+    currency: str
+    base_amount: float
+    base_currency: str
+    description: str
+    transaction_date: datetime
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 

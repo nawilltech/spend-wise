@@ -6,3 +6,4 @@ export { budgetsApi } from './budgets';
 export { categoriesApi } from './categories';
 export { goalsApi } from './goals';
 export { reportsApi } from './reports';
+export { adminApi } from './admin';
